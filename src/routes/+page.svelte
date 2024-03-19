@@ -47,7 +47,7 @@
         } catch (error) {
           console.error("Error:", error);
           map_data[map] = {
-            title: "Error",
+            title: map,
             image_url: "https://www.freeiconspng.com/uploads/error-icon-4.png",
           };
         }
