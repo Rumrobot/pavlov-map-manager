@@ -8,6 +8,14 @@
     PopoverContent,
     PopoverTrigger,
   } from "$components/ui/popover";
+  import { invoke } from "@tauri-apps/api";
+
+  async function read_config() {
+    const config = await invoke("read_config");
+    console.log("Config:", config);
+  }
+
+  read_config();
 </script>
 
 <header

@@ -7,13 +7,12 @@
   } from "$components/ui/card";
   import { invoke } from "@tauri-apps/api/tauri";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
 
   let maps: Array<string> = [];
   let map_data: { [key: string]: { title: string; image_url: string } } = {};
 
   async function get_maps() {
-    const path = "C:\\Users\\ne\\AppData\\Local\\Pavlov\\Saved\\Mods";
+    const path = "%localAppData%\\Pavlov\\Saved\\Mods";
     try {
       maps = await invoke("list_dir", { path });
       console.log("Folders:", maps);
