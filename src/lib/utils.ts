@@ -2,6 +2,8 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
+import type { Store } from "tauri-plugin-store-api";
+import { Variable } from "lucide-svelte";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -13,6 +15,23 @@ type FlyAndScaleParams = {
     start?: number;
     duration?: number;
 };
+
+export async function setAvatarUrl(oauth_token: string) {
+    try {
+      const response = await fetch("https://api.mod.io/v1/me", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + oauth_token,
+          Accept: "application/json",
+        },
+      });
+      const data = await response.json();
+      return data.avatar.thumb_100x100;
+    } catch (error) {
+      console.error("Error:", error);
+      return "https://www.freeiconspng.com/uploads/error-icon-4.png";
+    }
+  }
 
 export const flyAndScale = (
     node: Element,

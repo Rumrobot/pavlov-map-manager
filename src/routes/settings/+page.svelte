@@ -1,16 +1,128 @@
 <script lang="ts">
-  import { Sun, Moon } from "lucide-svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import { setMode } from "mode-watcher";
+  import { Store } from "tauri-plugin-store-api";
+  import { Input } from "$components/ui/input/";
+  import { Label } from "$components/ui/label";
+  import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "$components/ui/alert-dialog";
+  import { setAvatarUrl } from "$lib/utils";
+  import { Tooltip, TooltipContent, TooltipTrigger } from "$components/ui/tooltip";
 
-  import { toggleMode } from "mode-watcher";
+  const config = new Store(".config.dat");
+  let new_oauth_token: string;
+  let new_mods_path: string;
+  let oauth_token: string;
+  let mods_path: string;
+  let theme: string;
+
+  (async () => {
+    theme = (await config.get("theme")) as string;
+    oauth_token = await config.get("oauth_token");
+    mods_path = await config.get("mods_path");
+  })();
+
+  async function setTheme(new_theme: string) {
+    setMode(new_theme as "dark" | "light" | "system");
+    await config.set("theme", new_theme);
+
+    config.save();
+    theme = new_theme;
+  }
+
+  async function change_oauth_token(input: string) {
+    const new_avatar_url = await setAvatarUrl(input);
+    oauth_token = input;
+
+    await config.set("oauth_token", input);
+    await config.set("avatar_url", new_avatar_url);
+
+    await config.save();
+  }
+
+  async function change_mods_path(input: string) {
+    await config.set("mods_path", input);
+    mods_path = input;
+    await config.save();
+  }
 </script>
 
-<Button on:click={toggleMode} variant="outline" size="icon">
-  <Sun
-    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-  />
-  <Moon
-    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-  />
-  <span class="sr-only">Toggle theme</span>
-</Button>
+<div class="page-container flex flex-col justify-center items-center m-5">
+  <div class="flex flex-col gap-y-5">
+    <div class="flex flex-col gap-y-1.5 justify-start items-start">
+      <Label>Theme</Label>
+      <div class="flex flex-row gap-x-2">
+        <Button
+          variant={theme === "dark" ? "secondary" : "default"}
+          on:click={() => setTheme("dark")}
+        >
+          Dark
+        </Button>
+        <Button
+          variant={theme === "light" ? "secondary" : "default"}
+          on:click={() => setTheme("light")}
+        >
+          Light
+        </Button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-y-1.5 justify-start items-start">
+      <Label>Mod.io OAuth token</Label>
+      <div class="flex flex-row gap-x-1">
+        <Input
+          placeholder={oauth_token == null ? "Token" : oauth_token}
+          bind:value={new_oauth_token}
+        ></Input>
+        <AlertDialog>
+          <AlertDialogTrigger asChild let:builder>
+            <Button builders={[builder]} variant="outline">Confirm</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently remove the
+                old OAuth token from the application. If you dont have it
+                written down, then it will be lost forever.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                on:click={() => change_oauth_token(new_oauth_token)}
+                >Confirm</AlertDialogAction
+              >
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+    <div class="flex flex-col gap-y-1.5 justify-start items-start">
+      <Label>Path to mods folder</Label>
+      <div class="flex flex-row gap-x-1">
+        <Tooltip>
+        <TooltipTrigger>
+          <Input
+            placeholder={mods_path == null ? "Path" : mods_path}
+            bind:value={new_mods_path}
+          ></Input>
+        </TooltipTrigger>
+        <TooltipContent class="flex flex-row gap-x-1 justify-center items-center">
+          <p>Default value: </p>
+          <p class="rounded bg-secondary/20 p-1">C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Mods</p>
+        </TooltipContent>  
+      </Tooltip>
+        <Button variant="outline" on:click={() => change_mods_path(new_mods_path)}>Confirm</Button>
+      </div>
+    </div>
+  </div>
+</div>

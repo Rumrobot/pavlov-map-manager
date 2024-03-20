@@ -1,21 +1,51 @@
 <script lang="ts">
+  import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
   import { ArrowBigLeft, Menu } from "lucide-svelte";
   import "../app.pcss";
-  import { ModeWatcher } from "mode-watcher";
+  import { ModeWatcher, setMode } from "mode-watcher";
   import {
     Popover,
     PopoverContent,
     PopoverTrigger,
   } from "$components/ui/popover";
-  import { invoke } from "@tauri-apps/api";
+  import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
+  import { setAvatarUrl } from "$lib/utils";
 
-  async function read_config() {
-    const config = await invoke("read_config");
-    console.log("Config:", config);
-  }
+  const config = new Store(".config.dat");
 
-  read_config();
+  let theme: string;
+  let mods_path: string;
+  let oauth_token: string;
+  let avatar_url: string;
+
+  (async () => {
+    theme = await config.get("theme");
+    mods_path = await config.get("mods_path");
+    oauth_token = await config.get("oauth_token");
+    avatar_url = await config.get("avatar_url");
+
+    if (theme == null) {
+      await config.set("theme", "dark");
+      setMode("dark");
+    } else {
+      setMode(theme as "dark" | "light");
+    }
+
+    if (mods_path == null) {
+      await config.set(
+        "mods_path",
+        "C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Mods"
+      );
+    }
+
+    if (avatar_url == null) {
+      setAvatarUrl(oauth_token);
+      await config.set("avatar_url", avatar_url);
+    }
+  })();
+
+  
 </script>
 
 <header
@@ -39,10 +69,17 @@
           size="icon"
           variant="outline"
         >
-          <Menu />
+          {#if oauth_token == null}
+            <Menu />
+          {:else}
+            <Avatar>
+              <AvatarImage src={avatar_url} />
+              <AvatarFallback><Menu /></AvatarFallback>
+            </Avatar>
+          {/if}
         </Button>
       </PopoverTrigger>
-      <PopoverContent class="w-80">
+      <PopoverContent class="w-80 items-center flex justify-center">
         <a href="/settings">Settings</a>
       </PopoverContent>
     </Popover>
