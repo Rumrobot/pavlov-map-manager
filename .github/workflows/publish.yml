@@ -1,10 +1,12 @@
-name: 'publish'
+name: "publish"
 
-# This will trigger the action on each push to the `release` branch.
 on:
   push:
     branches:
       - release
+
+# This is the example from the readme.
+# On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
   publish-tauri:
@@ -40,8 +42,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Pavlov Map Manager v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          tagName: pavlov-map-manager-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: "Pavlov Map Manager v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
-          prerelease: true
+          prerelease: false
