@@ -15,8 +15,12 @@
   import { ArrowDownToLine, RefreshCcw, Star } from "lucide-svelte";
   import { onMount } from "svelte";
   import { Store } from "tauri-plugin-store-api";
+  import Bottleneck from "bottleneck";
 
   const config = new Store(".config.dat");
+  const limiter = new Bottleneck({
+    minTime: 100,
+  });
 
   let maps: Array<string> = [];
   let subscriptions: Array<string> = [];
@@ -56,15 +60,33 @@
     }
   }
 
+  async function api_request(
+    url: string,
+    method: string,
+    headers: any = {},
+    body?: string
+  ) {
+    headers.Authorization = "Bearer " + oauth_token;
+    headers.Accept = "application/json";
+
+    const response = await limiter.schedule(() =>
+      fetch(url, {
+        method: method,
+        headers: headers,
+        body: body,
+      })
+    );
+    if (!response.ok) {
+      console.error("Error while fetching data");
+      return;
+    }
+    return response;
+  }
+
   async function get_map_data(map: string) {
-    const response = await fetch(
+    const response = await api_request(
       `https://api.mod.io/v1/games/3959/mods/${map.split("UGC")[1]}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: "Bearer " + oauth_token,
-        },
-      }
+      "GET"
     );
     if (!response.ok) {
       console.error("Error while fetching map data for map " + map);
@@ -108,13 +130,11 @@
   }
 
   async function get_subscriptions() {
-    const response = await fetch(`https://api.mod.io/v1/me/subscribed`, {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + oauth_token,
-        Accept: "application/json",
-      },
-    });
+    const response = await api_request(
+      `https://api.mod.io/v1/me/subscribed`,
+      "GET"
+    );
+
     if (!response.ok) {
       console.error("Error while fetching subscribed maps");
       return;
@@ -139,18 +159,13 @@
   }
 
   async function subscribe(map: string) {
-    console.log("Subscribing to map " + map);
-    const response = await fetch(
+    const response = await api_request(
       `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
+      "POST",
       {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + oauth_token,
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: "include_dependencies=false",
-      }
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      "include_dependencies=false"
     );
     if (!response.ok) {
       return;
@@ -159,16 +174,11 @@
   }
 
   async function unsubscribe(map: string) {
-    console.log("Unsubscribing from map " + map);
-    const response = await fetch(
+    const response = await api_request(
       `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
+      "DELETE",
       {
-        method: "DELETE",
-        headers: {
-          Authorization: "Bearer " + oauth_token,
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
+        "Content-Type": "application/x-www-form-urlencoded",
       }
     );
     if (!response.ok) {
@@ -180,15 +190,9 @@
   async function download_map(map: string) {
     downloading = true;
     try {
-      const response = await fetch(
+      const response = await api_request(
         `https://api.mod.io/v1/games/3959/mods/${map}/files/${map_data["UGC" + map].latest_version}/download`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: "Bearer " + oauth_token,
-            Accept: "application/json",
-          },
-        }
+        "GET"
       );
       const reader = response.body.getReader();
       content_length = +response.headers.get("Content-Length");

@@ -17,6 +17,9 @@ dependencies:
   bits-ui:
     specifier: ^0.20.0
     version: 0.20.0(svelte@4.2.12)
+  bottleneck:
+    specifier: ^2.19.5
+    version: 2.19.5
   clsx:
     specifier: ^2.1.0
     version: 2.1.0
@@ -767,6 +770,10 @@ packages:
       '@melt-ui/svelte': 0.76.0(svelte@4.2.12)
       nanoid: 5.0.6
       svelte: 4.2.12
+    dev: false
+
+  /bottleneck@2.19.5:
+    resolution: {integrity: sha512-VHiNCbI1lKdl44tGrhNfU3lup0Tj/ZBMJB5/2ZbNXRCPuRCO7ed2mgcK4r17y+KB2EfuYuRaVlwNbAeaWGSpbw==}
     dev: false
 
   /brace-expansion@1.1.11:
