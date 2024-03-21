@@ -16,7 +16,11 @@
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
   import { setAvatarUrl } from "$lib/utils";
-  import { Tooltip, TooltipContent, TooltipTrigger } from "$components/ui/tooltip";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+  } from "$components/ui/tooltip";
 
   const config = new Store(".config.dat");
   let new_oauth_token: string;
@@ -110,18 +114,25 @@
       <Label>Path to mods folder</Label>
       <div class="flex flex-row gap-x-1">
         <Tooltip>
-        <TooltipTrigger>
-          <Input
-            placeholder={mods_path == null ? "Path" : mods_path}
-            bind:value={new_mods_path}
-          ></Input>
-        </TooltipTrigger>
-        <TooltipContent class="flex flex-row gap-x-1 justify-center items-center">
-          <p>Default value: </p>
-          <p class="rounded bg-secondary/20 p-1">C:\Users\%user%\AppData\Local\Pavlov\Saved\Mods</p>
-        </TooltipContent>  
-      </Tooltip>
-        <Button variant="outline" on:click={() => change_mods_path(new_mods_path)}>Confirm</Button>
+          <TooltipTrigger>
+            <Input
+              placeholder={mods_path == null ? "Path" : mods_path}
+              bind:value={new_mods_path}
+            ></Input>
+          </TooltipTrigger>
+          <TooltipContent
+            class="flex flex-row gap-x-1 justify-center items-center"
+          >
+            <p>Default value:</p>
+            <p class="rounded bg-secondary/20 p-1">
+              C:\Users\%user%\AppData\Local\Pavlov\Saved\Mods
+            </p>
+          </TooltipContent>
+        </Tooltip>
+        <Button
+          variant="outline"
+          on:click={() => change_mods_path(new_mods_path)}>Confirm</Button
+        >
       </div>
     </div>
   </div>

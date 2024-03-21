@@ -1,22 +1,35 @@
 <script lang="ts">
+  import { Button } from "$components/ui/button";
   import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
   } from "$components/ui/card";
+  import { Tooltip, TooltipTrigger } from "$components/ui/tooltip";
+  import TooltipContent from "$components/ui/tooltip/tooltip-content.svelte";
   import { invoke } from "@tauri-apps/api/tauri";
+  import { ArrowDownToLine, RefreshCcw, Star } from "lucide-svelte";
   import { onMount } from "svelte";
   import { Store } from "tauri-plugin-store-api";
 
   const config = new Store(".config.dat");
 
   let maps: Array<string> = [];
+  let subscriptions: Array<string> = [];
   let map_data: {
-    [key: string]: { title: string; image_url: string; new_update: boolean };
+    [key: string]: {
+      id: string;
+      title: string;
+      image_url: string;
+      new_update: boolean;
+      subscribed: boolean;
+    };
   } = {};
   let oauth_token: string;
   let mods_path: string;
+  let all_subscribed: boolean;
+  let all_updated: boolean;
 
   (async () => {
     oauth_token = await config.get("oauth_token");
@@ -27,7 +40,6 @@
     const path = await config.get("mods_path");
     try {
       maps = await invoke("list_dir", { path });
-      get_map_data(maps);
       return maps;
     } catch (error) {
       console.error("Error:", error);
@@ -35,67 +47,138 @@
     }
   }
 
-  async function get_map_data(maps) {
+  async function get_map_data(map: string) {
+    const response = await fetch(
+      `https://api.mod.io/v1/games/3959/mods/${map.split("UGC")[1]}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + oauth_token,
+        },
+      }
+    );
+    if (!response.ok) {
+      console.error("Error while fetching map data for map " + map);
+      return;
+    }
+    const data = await response.json();
+
+    const file_path = mods_path + "\\" + map + "\\taint";
+    const current_version = await invoke("read_file", {
+      filePath: file_path,
+    });
+    let latest_version: string;
+    let new_update: boolean;
+
+    const platforms = data.platforms;
+    for (const platform of platforms) {
+      if (platform.platform == "windows") {
+        latest_version = platform.modfile_live;
+      }
+    }
+
+    if (latest_version != null) {
+      if (latest_version != current_version) {
+        new_update = true;
+      } else {
+        new_update = false;
+      }
+    } else {
+      console.error("Error: No windows version found for map " + map);
+    }
+
+    return {
+      id: map.split("UGC")[1],
+      title: data.name,
+      image_url: data.logo.thumb_1280x720,
+      new_update: new_update,
+      subscribed: false,
+    };
+  }
+
+  async function get_subscriptions() {
+    const response = await fetch(`https://api.mod.io/v1/me/subscribed`, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + oauth_token,
+        Accept: "application/json",
+      },
+    });
+    if (!response.ok) {
+      console.error("Error while fetching subscribed maps");
+      return;
+    }
+    const data = await response.json();
+
+    for (const map of data.data) {
+      if (map.game_id == 3959) {
+        subscriptions.push(map.id);
+      }
+    }
+    return subscriptions;
+  }
+
+  async function check_subscribed(map: string, subscriptions: Array<string>) {
+    for (const subscribed of subscriptions) {
+      if (subscribed == map.split("UGC")[1]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async function subscribe(map: string) {
+    console.log("Subscribing to map " + map);
+    const response = await fetch(
+      `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + oauth_token,
+          Content_Type: "applicattion/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: "include_dependencies=false",
+      }
+    );
+    if (!response.ok) {
+      console.error("Error while subscribing to map " + map);
+      return;
+    }
+    console.log(response.ok);
+    console.log("Subscribed to map " + map);
+    map_data[map].subscribed = true;
+  }
+
+  async function load() {
+    maps = await get_maps();
+    subscriptions = await get_subscriptions();
     await Promise.all(
       maps.map(async (map) => {
-        try {
-          const response = await fetch(
-            `https://api.mod.io/v1/games/3959/mods/${map.split("UGC")[1]}`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: "Bearer " + oauth_token,
-              },
-            }
-          );
-          if (!response.ok) {
-            console.error("Error while fetching map data");
-            return;
-          }
-          const data = await response.json();
-
-          const file_path = mods_path + "\\" + map + "\\taint";
-          const current_version = await invoke("read_file", {
-            filePath: file_path,
-          });
-          let latest_version: string;
-          let new_update: boolean;
-
-          const platforms = data.platforms;
-          for (const platform of platforms) {
-            if (platform.platform == "windows") {
-              latest_version = platform.modfile_live;
-            }
-          }
-          if (latest_version != null) {
-            if (latest_version != current_version) {
-              new_update = true;
-            } else {
-              new_update = false;
-            }
-          } else {
-            console.error("Error: No windows version found");
-          }
-
-          map_data[map] = {
-            title: data.name,
-            image_url: data.logo.thumb_1280x720,
-            new_update: new_update,
-          };
-        } catch (error) {
-          console.error("Error:", error);
-          map_data[map] = {
-            title: map,
-            image_url: "https://www.freeiconspng.com/uploads/error-icon-4.png",
-            new_update: false,
-          };
-        }
+        map_data[map] = await get_map_data(map);
+        map_data[map].subscribed = await check_subscribed(map, subscriptions);
       })
     );
   }
 
+  async function check_all() {
+    for (const map of maps) {
+      if (map_data[map].new_update == true) {
+        all_updated = false;
+        return;
+      }
+    }
+    for (const map of maps) {
+      if (map_data[map].subscribed == false) {
+        all_subscribed = false;
+        return;
+      }
+    }
+  }
+
   onMount(async () => {
-    await get_maps();
+    await load();
+    await check_all();
   });
 </script>
 
@@ -104,6 +187,52 @@
     <div
       class="flex flex-col gap-y-5 justify-start items-start w-full max-w-6xl"
     >
+      <div class="flex items-center justify-end gap-x-1.5 w-full">
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant={all_updated == true ? "secondary" : "default"}
+              class={all_updated == true
+                ? "cursor-not-allowed hover:bg-secondary"
+                : ""}><ArrowDownToLine /></Button
+            >
+          </TooltipTrigger>
+          <TooltipContent>
+            {#if all_updated == true}
+              <p>All maps are up to date</p>
+            {:else}
+              <p>Update all maps</p>
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              ><Star
+                fill={all_subscribed == true ? "bg-primary" : "none"}
+                class={all_subscribed == true
+                  ? "cursor-not-allowed hover:bg-secondary"
+                  : ""}
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {#if all_subscribed == true}
+              <p>You are already subscribed to all maps</p>
+            {:else}
+              <p>Subscribe to all maps</p>
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button on:click={() => location.reload()}><RefreshCcw /></Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Refresh</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <div class="flex flex-col justify-start items-start">
         <div>
           <h2 class="text-xl">New update available</h2>
@@ -113,16 +242,21 @@
         >
           {#each Object.entries(map_data) as [_, map]}
             {#if map.new_update == true}
-              <Card class="m-1 items-end text-center">
+              <Card class="m-1 items-center text-center">
                 <CardHeader>
-                  <CardTitle class="text-2xl">{map.title}</CardTitle>
+                  <CardTitle class="text-2xl truncate overflow-ellipsis"
+                    >{map.title}</CardTitle
+                  >
                 </CardHeader>
                 <CardContent>
-                  <img
-                    src={map.image_url}
-                    alt={map.title}
-                    class="rounded-t-md"
-                  />
+                  <img src={map.image_url} alt={map.title} class="rounded-md" />
+                  <div class="mt-1.5 flex flex-row justify-between">
+                    <Button on:click={() => subscribe(map.id)}>
+                      <Star
+                        fill={map.subscribed == true ? "bg-primary" : "none"}
+                      />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             {/if}
@@ -136,16 +270,21 @@
         >
           {#each Object.entries(map_data) as [_, map]}
             {#if map.new_update != true}
-              <Card class="m-1 items-end text-center">
+              <Card class="m-1 items-center text-center">
                 <CardHeader>
-                  <CardTitle class="text-2xl">{map.title}</CardTitle>
+                  <CardTitle class="text-2xl truncate overflow-ellipsis"
+                    >{map.title}</CardTitle
+                  >
                 </CardHeader>
                 <CardContent>
-                  <img
-                    src={map.image_url}
-                    alt={map.title}
-                    class="rounded-t-md"
-                  />
+                  <img src={map.image_url} alt={map.title} class="rounded-md" />
+                  <div class="mt-1.5 flex flex-row justify-between">
+                    <Button on:click={() => subscribe(map.id)}>
+                      <Star
+                        fill={map.subscribed == true ? "bg-primary" : "none"}
+                      />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             {/if}

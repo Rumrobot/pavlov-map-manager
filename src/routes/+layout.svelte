@@ -44,8 +44,6 @@
       await config.set("avatar_url", avatar_url);
     }
   })();
-
-  
 </script>
 
 <header
@@ -65,7 +63,7 @@
       <PopoverTrigger asChild let:builder>
         <Button
           builders={[builder]}
-          class="relative h-10 w-10 min-w-10 items-center justify-center rounded-full"
+          class="relative h-10 w-10 min-w-10 items-center justify-center rounded-full z-60"
           size="icon"
           variant="outline"
         >
