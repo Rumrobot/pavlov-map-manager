@@ -118,7 +118,7 @@
         </TooltipTrigger>
         <TooltipContent class="flex flex-row gap-x-1 justify-center items-center">
           <p>Default value: </p>
-          <p class="rounded bg-secondary/20 p-1">C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Mods</p>
+          <p class="rounded bg-secondary/20 p-1">C:\Users\%user%\AppData\Local\Pavlov\Saved\Mods</p>
         </TooltipContent>  
       </Tooltip>
         <Button variant="outline" on:click={() => change_mods_path(new_mods_path)}>Confirm</Button>

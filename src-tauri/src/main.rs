@@ -25,10 +25,22 @@ fn list_dir(path: String) -> Result<Vec<String>, String> {
     Ok(folders)
 }
 
+#[tauri::command]
+fn read_file(file_path: String) -> Result<String, String> {
+    // Attempt to read the file
+    let parsed_path = file_path.replace("%user%", &whoami::username());
+    match fs::read_to_string(&parsed_path) {
+        // If successful, return the file contents as a string
+        Ok(contents) => Ok(contents),
+        // If an error occurs, return the error
+        Err(error) => Err(format!("Error reading file: {} for path: {}", error, file_path))
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![list_dir])
+        .invoke_handler(tauri::generate_handler![list_dir, read_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
