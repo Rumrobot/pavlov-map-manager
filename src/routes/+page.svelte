@@ -6,8 +6,11 @@
     CardHeader,
     CardTitle,
   } from "$components/ui/card";
+  import { Progress } from "$components/ui/progress";
   import { Tooltip, TooltipTrigger } from "$components/ui/tooltip";
   import TooltipContent from "$components/ui/tooltip/tooltip-content.svelte";
+  import { writeBinaryFile, BaseDirectory } from "@tauri-apps/api/fs";
+  import { humanFileSize } from "$lib/utils";
   import { invoke } from "@tauri-apps/api/tauri";
   import { ArrowDownToLine, RefreshCcw, Star } from "lucide-svelte";
   import { onMount } from "svelte";
@@ -23,6 +26,8 @@
       title: string;
       image_url: string;
       new_update: boolean;
+      current_version: string;
+      latest_version: string;
       subscribed: boolean;
     };
   } = {};
@@ -30,6 +35,10 @@
   let mods_path: string;
   let all_subscribed: boolean;
   let all_updated: boolean;
+  let downloading: boolean = false;
+  let received_length: number = 0;
+  let content_length: number = 0;
+  let progress: number = 0;
 
   (async () => {
     oauth_token = await config.get("oauth_token");
@@ -92,6 +101,8 @@
       title: data.name,
       image_url: data.logo.thumb_1280x720,
       new_update: new_update,
+      current_version: current_version as string,
+      latest_version: latest_version,
       subscribed: false,
     };
   }
@@ -135,19 +146,86 @@
         method: "POST",
         headers: {
           Authorization: "Bearer " + oauth_token,
-          Content_Type: "applicattion/x-www-form-urlencoded",
+          "Content-Type": "application/x-www-form-urlencoded",
           Accept: "application/json",
         },
         body: "include_dependencies=false",
       }
     );
     if (!response.ok) {
-      console.error("Error while subscribing to map " + map);
       return;
     }
-    console.log(response.ok);
-    console.log("Subscribed to map " + map);
-    map_data[map].subscribed = true;
+    location.reload();
+  }
+
+  async function unsubscribe(map: string) {
+    console.log("Unsubscribing from map " + map);
+    const response = await fetch(
+      `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: "Bearer " + oauth_token,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      return;
+    }
+    location.reload();
+  }
+
+  async function download_map(map: string) {
+    downloading = true;
+    try {
+      const response = await fetch(
+        `https://api.mod.io/v1/games/3959/mods/${map}/files/${map_data["UGC" + map].latest_version}/download`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer " + oauth_token,
+            Accept: "application/json",
+          },
+        }
+      );
+      const reader = response.body.getReader();
+      content_length = +response.headers.get("Content-Length");
+
+      received_length = 0; // received that many bytes at the moment
+      let chunks = []; // array of received binary chunks (comprises the body)
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        chunks.push(value);
+        received_length += value.length;
+
+        progress = (received_length / content_length) * 100;
+      }
+
+      let chunksAll = new Uint8Array(received_length); // (4.1)
+      let position = 0;
+      for (let chunk of chunks) {
+        chunksAll.set(chunk, position); // (4.2)
+        position += chunk.length;
+      }
+
+      // Write data to file using Tauri's file system API
+      await writeBinaryFile({
+        path: `${mods_path}\\UGC${map}\\${map}.zip`,
+        contents: chunksAll,
+      });
+
+      //write data to file using tauri
+      console.log("File saved successfully");
+    } catch (error) {
+      console.error("Error downloading and saving file:", error);
+    }
   }
 
   async function load() {
@@ -162,18 +240,20 @@
   }
 
   async function check_all() {
+    all_updated = true;
+    all_subscribed = true;
+
     for (const map of maps) {
-      if (map_data[map].new_update == true) {
+      if (map_data[map].new_update) {
         all_updated = false;
-        return;
       }
     }
     for (const map of maps) {
-      if (map_data[map].subscribed == false) {
+      if (!map_data[map].subscribed) {
         all_subscribed = false;
-        return;
       }
     }
+    return;
   }
 
   onMount(async () => {
@@ -184,54 +264,65 @@
 
 <div class="flex justify-center items-center m-5">
   {#if maps.length > 0}
-    <div
-      class="flex flex-col gap-y-5 justify-start items-start w-full max-w-6xl"
-    >
-      <div class="flex items-center justify-end gap-x-1.5 w-full">
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              variant={all_updated == true ? "secondary" : "default"}
-              class={all_updated == true
-                ? "cursor-not-allowed hover:bg-secondary"
-                : ""}><ArrowDownToLine /></Button
-            >
-          </TooltipTrigger>
-          <TooltipContent>
-            {#if all_updated == true}
-              <p>All maps are up to date</p>
-            {:else}
-              <p>Update all maps</p>
-            {/if}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              ><Star
-                fill={all_subscribed == true ? "bg-primary" : "none"}
-                class={all_subscribed == true
-                  ? "cursor-not-allowed hover:bg-secondary"
-                  : ""}
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {#if all_subscribed == true}
-              <p>You are already subscribed to all maps</p>
-            {:else}
-              <p>Subscribe to all maps</p>
-            {/if}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button on:click={() => location.reload()}><RefreshCcw /></Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Refresh</p>
-          </TooltipContent>
-        </Tooltip>
+    <div class="flex flex-col gap-y-5items-start w-full max-w-6xl">
+      <div class="flex items-center flex-col gap-y-1.5">
+        <Progress
+          value={progress}
+          class="w-full {downloading ? '' : 'hidden'}"
+        />
+        <div
+          class="w-full flex flex-row {downloading
+            ? 'justify-between'
+            : 'justify-end'}"
+        >
+          <div class="items-center flex {downloading ? '' : 'hidden'}">
+            {humanFileSize(received_length)}/{humanFileSize(content_length)}
+          </div>
+          <div class="flex items-center gap-x-1.5">
+            <Tooltip>
+              <TooltipTrigger>
+                <Button disabled={all_updated}><ArrowDownToLine /></Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {#if all_updated}
+                  All maps are up to date
+                {:else}
+                  Update all maps
+                {/if}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  disabled={all_subscribed}
+                  on:click={() => {
+                    for (const [_, map] of Object.entries(map_data)) {
+                      if (!map.subscribed) {
+                        subscribe(map.id);
+                      }
+                    }
+                  }}
+                  ><Star fill={all_subscribed ? "bg-primary" : "none"} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {#if all_subscribed}
+                  You are already subscribed to all maps
+                {:else}
+                  Subscribe to all maps
+                {/if}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button on:click={() => location.reload()}
+                  ><RefreshCcw /></Button
+                >
+              </TooltipTrigger>
+              <TooltipContent>Refresh</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
       </div>
       <div class="flex flex-col justify-start items-start">
         <div>
@@ -241,7 +332,7 @@
           class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
         >
           {#each Object.entries(map_data) as [_, map]}
-            {#if map.new_update == true}
+            {#if map.new_update}
               <Card class="m-1 items-center text-center">
                 <CardHeader>
                   <CardTitle class="text-2xl truncate overflow-ellipsis"
@@ -251,11 +342,25 @@
                 <CardContent>
                   <img src={map.image_url} alt={map.title} class="rounded-md" />
                   <div class="mt-1.5 flex flex-row justify-between">
-                    <Button on:click={() => subscribe(map.id)}>
-                      <Star
-                        fill={map.subscribed == true ? "bg-primary" : "none"}
-                      />
-                    </Button>
+                    {#if map.new_update}
+                      <Button
+                        on:click={() => download_map(map.id)}
+                        class={!map.new_update
+                          ? "cursor-not-allowed hover:bg-primary"
+                          : ""}
+                      >
+                        <ArrowDownToLine />
+                      </Button>
+                    {/if}
+                    {#if map.subscribed}
+                      <Button on:click={() => unsubscribe(map.id)}>
+                        <Star fill="bg-primary" />
+                      </Button>
+                    {:else}
+                      <Button on:click={() => subscribe(map.id)}>
+                        <Star fill="none" />
+                      </Button>
+                    {/if}
                   </div>
                 </CardContent>
               </Card>
@@ -280,9 +385,7 @@
                   <img src={map.image_url} alt={map.title} class="rounded-md" />
                   <div class="mt-1.5 flex flex-row justify-between">
                     <Button on:click={() => subscribe(map.id)}>
-                      <Star
-                        fill={map.subscribed == true ? "bg-primary" : "none"}
-                      />
+                      <Star fill={map.subscribed ? "bg-primary" : "none"} />
                     </Button>
                   </div>
                 </CardContent>

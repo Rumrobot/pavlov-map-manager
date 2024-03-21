@@ -13,6 +13,7 @@
   "dependencies": {
     "@sveltejs/kit": "^2.5.4",
     "@tauri-apps/api": "^1",
+    "adm-zip": "^0.5.12",
     "bits-ui": "^0.20.0",
     "clsx": "^2.1.0",
     "lucide-svelte": "^0.359.0",
