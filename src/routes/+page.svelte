@@ -9,13 +9,14 @@
   import { Progress } from "$components/ui/progress";
   import { Tooltip, TooltipTrigger } from "$components/ui/tooltip";
   import TooltipContent from "$components/ui/tooltip/tooltip-content.svelte";
-  import { writeBinaryFile, BaseDirectory } from "@tauri-apps/api/fs";
+  import { writeBinaryFile } from "@tauri-apps/api/fs";
   import { humanFileSize } from "$lib/utils";
   import { invoke } from "@tauri-apps/api/tauri";
   import { ArrowDownToLine, RefreshCcw, Star } from "lucide-svelte";
   import { onMount } from "svelte";
   import { Store } from "tauri-plugin-store-api";
   import Bottleneck from "bottleneck";
+  var AdmZip = require("adm-zip");
 
   const config = new Store(".config.dat");
   const limiter = new Bottleneck({
@@ -39,9 +40,10 @@
   let mods_path: string;
   let all_subscribed: boolean;
   let all_updated: boolean;
+
   let downloading: boolean = false;
-  let received_length: number = 0;
-  let content_length: number = 0;
+  let receivedSize: number = 0;
+  let totalSize: number = 0;
   let progress: number = 0;
 
   (async () => {
@@ -191,39 +193,69 @@
     downloading = true;
 
     try {
-      const response = await fetch(
+      const fileInfoResponse = await api_request(
+        `https://api.mod.io/v1/games/3959/mods/${map}/files/${map_data["UGC" + map].latest_version}`,
+        "GET"
+      );
+      const fileInfo = await fileInfoResponse.json();
+
+      totalSize = fileInfo.filesize;
+
+      if (fileInfo.virus_positive == 1) {
+        console.error("Error: Virus detected in map " + map);
+        return;
+      }
+      //`https://getsamplefiles.com/download/zip/sample-1.zip`
+      const fileResponse = await fetch(
         `https://getsamplefiles.com/download/zip/sample-1.zip`
       );
-      /*const reader = response.body.getReader();
-      content_length = +response.headers.get("Content-Length");
 
-      received_length = 0; // received that many bytes at the moment
+      const fileReader = fileResponse.body.getReader();
+
+      receivedSize = 0; // received that many bytes at the moment
       let chunks = []; // array of received binary chunks (comprises the body)
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await fileReader.read();
 
         if (done) {
           break;
         }
 
         chunks.push(value);
-        received_length += value.length;
+        receivedSize += value.length;
 
-        progress = (received_length / content_length) * 100;
-      }*/
+        progress = (receivedSize / totalSize) * 100;
+      }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const zipBlob = new Blob([arrayBuffer], { type: "application/zip" });
-      const array = new Uint8Array(await zipBlob.arrayBuffer());
+      let chunksAll = new Uint8Array(receivedSize); // (4.1)
+      let position = 0;
+      for (let chunk of chunks) {
+        chunksAll.set(chunk, position); // (4.2)
+        position += chunk.length;
+      }
 
-      // Write data to file using Tauri's file system API
-      await writeBinaryFile({
-        path: `${map}.zip`,
-        contents: array,
+      const zippedContent = AdmZip(chunksAll);
+
+      // Create an instance of AdmZip
+      const zip = new AdmZip(zippedContent);
+
+      // Extract the contents of the zip file
+      const zipEntries = zip.getEntries();
+
+      zipEntries.forEach(async (entry) => {
+        // Check if entry is a file
+        if (!entry.isDirectory) {
+          // Extract file content
+          const fileContent = entry.getData();
+
+          // Write file content to disk
+          await writeBinaryFile({
+            path: `${map}\\${entry.entryName}`,
+            contents: fileContent,
+          });
+          console.log(`File ${entry.entryName} extracted and saved.`);
+        }
       });
-
-      //write data to file using tauri
-      console.log("File saved successfully");
     } catch (error) {
       console.error("Error downloading and saving file:", error);
     }
@@ -277,7 +309,7 @@
             : 'justify-end'}"
         >
           <div class="items-center flex {downloading ? '' : 'hidden'}">
-            {humanFileSize(received_length)}/{humanFileSize(content_length)}
+            {humanFileSize(receivedSize)}/{humanFileSize(totalSize)}
           </div>
           <div class="flex items-center gap-x-1.5">
             <Tooltip>
