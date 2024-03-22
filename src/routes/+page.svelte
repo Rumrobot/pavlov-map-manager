@@ -189,12 +189,12 @@
 
   async function download_map(map: string) {
     downloading = true;
+
     try {
-      const response = await api_request(
-        `https://api.mod.io/v1/games/3959/mods/${map}/files/${map_data["UGC" + map].latest_version}/download`,
-        "GET"
+      const response = await fetch(
+        `https://getsamplefiles.com/download/zip/sample-1.zip`
       );
-      const reader = response.body.getReader();
+      /*const reader = response.body.getReader();
       content_length = +response.headers.get("Content-Length");
 
       received_length = 0; // received that many bytes at the moment
@@ -210,19 +210,16 @@
         received_length += value.length;
 
         progress = (received_length / content_length) * 100;
-      }
+      }*/
 
-      let chunksAll = new Uint8Array(received_length); // (4.1)
-      let position = 0;
-      for (let chunk of chunks) {
-        chunksAll.set(chunk, position); // (4.2)
-        position += chunk.length;
-      }
+      const arrayBuffer = await response.arrayBuffer();
+      const zipBlob = new Blob([arrayBuffer], { type: "application/zip" });
+      const array = new Uint8Array(await zipBlob.arrayBuffer());
 
       // Write data to file using Tauri's file system API
       await writeBinaryFile({
-        path: `${mods_path}\\UGC${map}\\${map}.zip`,
-        contents: chunksAll,
+        path: `${map}.zip`,
+        contents: array,
       });
 
       //write data to file using tauri
