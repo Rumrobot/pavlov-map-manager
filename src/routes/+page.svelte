@@ -9,14 +9,33 @@
   import { Progress } from "$components/ui/progress";
   import { Tooltip, TooltipTrigger } from "$components/ui/tooltip";
   import TooltipContent from "$components/ui/tooltip/tooltip-content.svelte";
-  import { writeBinaryFile } from "@tauri-apps/api/fs";
+  import { removeFile } from "@tauri-apps/api/fs";
   import { humanFileSize } from "$lib/utils";
   import { invoke } from "@tauri-apps/api/tauri";
-  import { ArrowDownToLine, RefreshCcw, Star } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { open } from "@tauri-apps/api/shell";
+  import {
+    ArrowDownToLine,
+    RefreshCcw,
+    Star,
+    Trash,
+    LoaderCircle,
+  } from "lucide-svelte";
   import { Store } from "tauri-plugin-store-api";
   import Bottleneck from "bottleneck";
-  var AdmZip = require("adm-zip");
+  import { download } from "tauri-plugin-upload-api";
+  import { toast } from "svelte-sonner";
+  import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "$components/ui/alert-dialog";
+  import { get } from "svelte/store";
 
   const config = new Store(".config.dat");
   const limiter = new Bottleneck({
@@ -25,50 +44,85 @@
 
   let maps: Array<string> = [];
   let subscriptions: Array<string> = [];
-  let map_data: {
+  let mapData: {
     [key: string]: {
-      id: string;
       title: string;
-      image_url: string;
-      new_update: boolean;
-      current_version: string;
-      latest_version: string;
+      imageUrl: string;
+      modUrl: string;
+      newUpdate: boolean;
+      currentVersion: string;
+      latestVersion: string;
       subscribed: boolean;
+      installedLocally: boolean;
     };
-  } = {};
-  let oauth_token: string;
-  let mods_path: string;
-  let all_subscribed: boolean;
-  let all_updated: boolean;
+  } = new Proxy(
+    {},
+    {
+      get(target, prop, receiver) {
+        if (!(prop in target)) {
+          target[prop] = {
+            title: null,
+            imageUrl: null,
+            modUrl: null,
+            newUpdate: false,
+            currentVersion: null,
+            latestVersion: null,
+            subscribed: false,
+            installedLocally: true,
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    }
+  );
+
+  let oauthToken: string;
+  let modsPath: string;
+  let allSubscribed: boolean;
+  let allUpdated: boolean;
+
+  let loading: boolean = true;
+  let status: string;
 
   let downloading: boolean = false;
+  let currentlyDownloading: string;
   let receivedSize: number = 0;
   let totalSize: number = 0;
-  let progress: number = 0;
+  let downloadProgress: number = 0;
+  let queueProgress: number = 0;
+  let downloadStatus: string;
+  let queue: Array<string> = [];
+  let initialQueueLength: number = 0;
+  let queueDownloaded: number = 0;
 
-  (async () => {
-    oauth_token = await config.get("oauth_token");
-    mods_path = await config.get("mods_path");
-  })();
-
-  async function get_maps() {
+  async function getMaps() {
     const path = await config.get("mods_path");
     try {
       maps = await invoke("list_dir", { path });
-      return maps;
+
+      maps = maps.filter((map: string) => map.startsWith("UGC"));
+      maps = maps.map((map: string) => map.split("UGC")[1]);
+
+      for (const map of subscriptions) {
+        if (!maps.includes(map.toString())) {
+          maps.push(map);
+        }
+      }
+
+      return;
     } catch (error) {
-      console.error("Error:", error);
+      toast.error("Error while reading maps from path: " + path);
       return [];
     }
   }
 
-  async function api_request(
+  async function modioRequest(
     url: string,
     method: string,
     headers: any = {},
     body?: string
   ) {
-    headers.Authorization = "Bearer " + oauth_token;
+    headers.Authorization = "Bearer " + oauthToken;
     headers.Accept = "application/json";
 
     const response = await limiter.schedule(() =>
@@ -78,90 +132,108 @@
         body: body,
       })
     );
-    if (!response.ok) {
-      console.error("Error while fetching data");
-      return;
-    }
+
     return response;
   }
 
-  async function get_map_data(map: string) {
-    const response = await api_request(
-      `https://api.mod.io/v1/games/3959/mods/${map.split("UGC")[1]}`,
-      "GET"
-    );
-    if (!response.ok) {
-      console.error("Error while fetching map data for map " + map);
-      return;
-    }
-    const data = await response.json();
+  async function getMapData(map: string) {
+    if (!mapData.hasOwnProperty(map)) {
+      const response = await modioRequest(
+        `https://api.mod.io/v1/games/3959/mods/${map}`,
+        "GET"
+      );
+      if (!response.ok) {
+        toast.error("Error while fetching map data for map: " + map);
 
-    const file_path = mods_path + "\\" + map + "\\taint";
-    const current_version = await invoke("read_file", {
-      filePath: file_path,
-    });
-    let latest_version: string;
-    let new_update: boolean;
+        // Remove the map from the list if it doesn't exist on mod.io
+        maps = maps.filter((m) => m != map);
+        mapData = Object.fromEntries(
+          Object.entries(mapData).filter(([key]) => key != map)
+        );
+        return;
+      }
+      const data = await response.json();
 
-    const platforms = data.platforms;
-    for (const platform of platforms) {
-      if (platform.platform == "windows") {
-        latest_version = platform.modfile_live;
+      mapData[map].title = data.name;
+      mapData[map].imageUrl = data.logo.thumb_1280x720;
+      mapData[map].modUrl = data.profile_url;
+
+      const platforms = data.platforms;
+      for (const platform of platforms) {
+        if (platform.platform == "windows") {
+          mapData[map].latestVersion = platform.modfile_live;
+        }
       }
     }
 
-    if (latest_version != null) {
-      if (latest_version != current_version) {
-        new_update = true;
+    const filePath = `${modsPath}\\UGC${map}\\taint`;
+    let currentVersion: string;
+    try {
+      currentVersion = await invoke("read_file", {
+        filePath: filePath,
+      });
+    } catch (error) {
+      mapData[map].installedLocally = false;
+      console.log("Map not installed locally: " + map);
+    }
+    mapData[map].currentVersion = currentVersion as string;
+
+    if (subscriptions.includes(map)) {
+      mapData[map].subscribed = true;
+    }
+
+    if (mapData[map].latestVersion != null) {
+      if (mapData[map].latestVersion != currentVersion) {
+        mapData[map].newUpdate = true;
       } else {
-        new_update = false;
+        mapData[map].newUpdate = false;
       }
     } else {
-      console.error("Error: No windows version found for map " + map);
+      maps = maps.filter((m) => m != map);
+      mapData = Object.fromEntries(
+        Object.entries(mapData).filter(([key]) => key != map)
+      );
     }
-
-    return {
-      id: map.split("UGC")[1],
-      title: data.name,
-      image_url: data.logo.thumb_1280x720,
-      new_update: new_update,
-      current_version: current_version as string,
-      latest_version: latest_version,
-      subscribed: false,
-    };
+    return;
   }
 
-  async function get_subscriptions() {
-    const response = await api_request(
-      `https://api.mod.io/v1/me/subscribed`,
+  async function getSubscriptions() {
+    const response = await modioRequest(
+      `https://api.mod.io/v1/me/subscribed?game_id=3959`,
       "GET"
     );
 
     if (!response.ok) {
-      console.error("Error while fetching subscribed maps");
+      toast.error("Error while fetching subscribed maps");
       return;
     }
     const data = await response.json();
 
     for (const map of data.data) {
-      if (map.game_id == 3959) {
-        subscriptions.push(map.id);
-      }
-    }
-    return subscriptions;
-  }
+      subscriptions.push(map.id);
+      maps.push(map.id);
 
-  async function check_subscribed(map: string, subscriptions: Array<string>) {
-    for (const subscribed of subscriptions) {
-      if (subscribed == map.split("UGC")[1]) {
-        return true;
+      mapData[map.id].title = map.name;
+      mapData[map.id].imageUrl = map.logo.thumb_1280x720;
+      mapData[map.id].modUrl = map.profile_url;
+
+      const platforms = map.platforms;
+      for (const platform of platforms) {
+        if (platform.platform == "windows") {
+          mapData[map.id].latestVersion = platform.modfile_live;
+        }
       }
     }
-    return false;
+    return;
   }
 
   async function subscribe(map: string) {
-    const response = await api_request(
+    if (mapData[map].subscribed) {
+      toast.error("You are already subscribed to map: " + mapData[map].title);
+      return;
+    }
+
+    const response = await modioRequest(
       `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
       "POST",
       {
@@ -170,13 +242,22 @@
       "include_dependencies=false"
     );
     if (!response.ok) {
+      toast.error("Error while subscribing to map: " + mapData[map].title);
+      mapData[map].subscribed = false;
       return;
     }
-    location.reload();
+
+    mapData[map].subscribed = true;
+    checkAll();
   }
 
   async function unsubscribe(map: string) {
-    const response = await api_request(
+    if (!mapData[map].subscribed) {
+      toast.error("You are already unsubscribed to map: " + mapData[map].title);
+      return;
+    }
+
+    const response = await modioRequest(
       `https://api.mod.io/v1/games/3959/mods/${map}/subscribe`,
       "DELETE",
       {
@@ -184,255 +265,469 @@
       }
     );
     if (!response.ok) {
+      toast.error("Error while unsubscribing from map: " + mapData[map].title);
+      mapData[map].subscribed = true;
       return;
     }
-    location.reload();
+
+    mapData[map].subscribed = false;
+    checkAll();
   }
 
-  async function download_map(map: string) {
-    downloading = true;
+  async function downloadMap(map: string) {
+    // Set downloading to true to show the progress bar
+    currentlyDownloading = mapData[map].title;
+    downloadStatus = "Fetching file info";
 
-    try {
-      const fileInfoResponse = await api_request(
-        `https://api.mod.io/v1/games/3959/mods/${map}/files/${map_data["UGC" + map].latest_version}`,
-        "GET"
-      );
-      const fileInfo = await fileInfoResponse.json();
-
-      totalSize = fileInfo.filesize;
-
-      if (fileInfo.virus_positive == 1) {
-        console.error("Error: Virus detected in map " + map);
-        return;
-      }
-      //`https://getsamplefiles.com/download/zip/sample-1.zip`
-      const fileResponse = await fetch(
-        `https://getsamplefiles.com/download/zip/sample-1.zip`
-      );
-
-      const fileReader = fileResponse.body.getReader();
-
-      receivedSize = 0; // received that many bytes at the moment
-      let chunks = []; // array of received binary chunks (comprises the body)
-      while (true) {
-        const { done, value } = await fileReader.read();
-
-        if (done) {
-          break;
-        }
-
-        chunks.push(value);
-        receivedSize += value.length;
-
-        progress = (receivedSize / totalSize) * 100;
-      }
-
-      let chunksAll = new Uint8Array(receivedSize); // (4.1)
-      let position = 0;
-      for (let chunk of chunks) {
-        chunksAll.set(chunk, position); // (4.2)
-        position += chunk.length;
-      }
-
-      const zippedContent = AdmZip(chunksAll);
-
-      // Create an instance of AdmZip
-      const zip = new AdmZip(zippedContent);
-
-      // Extract the contents of the zip file
-      const zipEntries = zip.getEntries();
-
-      zipEntries.forEach(async (entry) => {
-        // Check if entry is a file
-        if (!entry.isDirectory) {
-          // Extract file content
-          const fileContent = entry.getData();
-
-          // Write file content to disk
-          await writeBinaryFile({
-            path: `${map}\\${entry.entryName}`,
-            contents: fileContent,
-          });
-          console.log(`File ${entry.entryName} extracted and saved.`);
-        }
-      });
-    } catch (error) {
-      console.error("Error downloading and saving file:", error);
-    }
-  }
-
-  async function load() {
-    maps = await get_maps();
-    subscriptions = await get_subscriptions();
-    await Promise.all(
-      maps.map(async (map) => {
-        map_data[map] = await get_map_data(map);
-        map_data[map].subscribed = await check_subscribed(map, subscriptions);
-      })
+    // Get the file info
+    const fileInfoResponse = await modioRequest(
+      `https://api.mod.io/v1/games/3959/mods/${map}/files/${mapData[map].latestVersion}`,
+      "GET"
     );
+    if (!fileInfoResponse.ok) {
+      toast.error(
+        "Error while fetching file info for map: " + mapData[map].title
+      );
+      downloadStatus = "Error fetching file info";
+      return;
+    }
+
+    downloadStatus = "Checking file info";
+
+    const fileInfo = await fileInfoResponse.json();
+
+    // Set the total byte size of the file
+    totalSize = fileInfo.filesize;
+
+    // Check if the file is infected with a virus
+    if (fileInfo.virus_positive == 1) {
+      toast.error("Virus detected in map: " + mapData[map].title);
+      downloadStatus = "Virus detected";
+      return;
+    }
+
+    downloadStatus = "Downloading";
+    // Download the file
+    try {
+      const headers = new Map();
+      headers.set("Authorization", `Bearer ${oauthToken}`);
+      headers.set("Content-Type", "application/x-www-form-urlencoded");
+      headers.set("Accept", "application/json");
+      headers.set("X-Modio-Platform", "windows");
+
+      await download(
+        fileInfo.download.binary_url,
+        `${map}.zip`,
+        (progress, total) => {
+          receivedSize = progress;
+          totalSize = total;
+          downloadProgress = (progress / total) * 100;
+        },
+        headers
+      );
+    } catch (error) {
+      toast.error("Error while downloading file");
+      downloadStatus = "Error downloading file";
+      return;
+    }
+
+    downloadStatus = "Extracting the file";
+    // Extract the zip file and remove it
+    try {
+      await invoke("extract_zip", {
+        zipPath: `${map}.zip`,
+        extractPath: `${modsPath}\\UGC${map}\\Data`,
+      });
+      await removeFile(`${map}.zip`);
+    } catch (error) {
+      toast.error("Error while extracting file");
+      await removeFile(`${map}.zip`);
+      downloadStatus = "Error extracting file";
+      return;
+    }
+
+    downloadStatus = "Saving the new version number";
+    // Save the new version number to the taint file
+    await invoke("write_text_file", {
+      filePath: `${modsPath}\\UGC${map}\\taint`,
+      contents: mapData[map].latestVersion.toString(),
+    });
+
+    downloadStatus = "Done";
+    mapData[map].newUpdate = false;
+    return;
   }
 
-  async function check_all() {
-    all_updated = true;
-    all_subscribed = true;
+  async function downloadQueue() {
+    downloading = true;
+    await downloadMap(queue[0]);
+    queue.shift();
+
+    if (queue.length > 0) {
+      queueDownloaded++;
+      queueProgress = (queueDownloaded / initialQueueLength) * 100;
+      downloadQueue();
+      return;
+    } else {
+      queueProgress = 0;
+      queueDownloaded = 0;
+      initialQueueLength = 0;
+      checkAll();
+      downloading = false;
+      return;
+    }
+  }
+
+  async function addDownloadQueue(maps: Array<string>) {
+    for (const map of maps) {
+      if (mapData[map].newUpdate && !queue.includes(map)) {
+        queue.push(map);
+      } else {
+      }
+    }
+    if (initialQueueLength == 0) {
+      downloadQueue();
+    }
+    initialQueueLength = initialQueueLength + maps.length;
+
+    return;
+  }
+
+  async function deleteMod(map: string) {
+    if (mapData[map].subscribed) {
+      await unsubscribe(map);
+    }
+
+    maps = maps.filter((m) => m != map);
+    mapData = Object.fromEntries(
+      Object.entries(mapData).filter(([key, value]) => key != map)
+    );
+
+    checkAll();
+
+    await invoke("remove_dir", {
+      path: `${modsPath}\\UGC${map}`,
+    });
+
+    return;
+  }
+
+  function checkAll() {
+    allUpdated = true;
+    allSubscribed = true;
 
     for (const map of maps) {
-      if (map_data[map].new_update) {
-        all_updated = false;
+      if (mapData[map].newUpdate) {
+        allUpdated = false;
       }
     }
     for (const map of maps) {
-      if (!map_data[map].subscribed) {
-        all_subscribed = false;
+      if (!mapData[map].subscribed) {
+        allSubscribed = false;
+        console.log("Map not subscribed: " + map);
       }
     }
     return;
   }
 
-  onMount(async () => {
+  async function load() {
+    status = "Finding maps";
+
+    try {
+      await getMaps();
+    } catch (error) {
+      console.log("Error while reading maps");
+      return;
+    }
+
+    status = "Fetching subscriptions";
+    await getSubscriptions();
+
+    let i: number = 0;
+    for (const map of maps) {
+      status = `Fetching map data: ${i}/${maps.length}`;
+      try {
+        await getMapData(map);
+      } catch (error) {
+        console.log("Error while getting map data for map: " + map);
+        i--;
+      }
+      i++;
+    }
+  }
+
+  (async () => {
+    loading = true;
+    oauthToken = await config.get("oauth_token");
+    modsPath = await config.get("mods_path");
+
     await load();
-    await check_all();
-  });
+    checkAll();
+
+    status = "Done";
+    loading = false;
+  })();
 </script>
 
 <div class="flex justify-center items-center m-5">
-  {#if maps.length > 0}
-    <div class="flex flex-col gap-y-5items-start w-full max-w-6xl">
-      <div class="flex items-center flex-col gap-y-1.5">
-        <Progress
-          value={progress}
-          class="w-full {downloading ? '' : 'hidden'}"
-        />
+  {#if oauthToken != ("" && null)}
+    {#if maps.length > 0}
+      {#if loading}
         <div
-          class="w-full flex flex-row {downloading
-            ? 'justify-between'
-            : 'justify-end'}"
+          class="flex flex-col gap-y-5 w-full max-w-6xl justify-center items-center"
         >
-          <div class="items-center flex {downloading ? '' : 'hidden'}">
-            {humanFileSize(receivedSize)}/{humanFileSize(totalSize)}
-          </div>
-          <div class="flex items-center gap-x-1.5">
-            <Tooltip>
-              <TooltipTrigger>
-                <Button disabled={all_updated}><ArrowDownToLine /></Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {#if all_updated}
-                  All maps are up to date
-                {:else}
-                  Update all maps
-                {/if}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  disabled={all_subscribed}
-                  on:click={() => {
-                    for (const [_, map] of Object.entries(map_data)) {
-                      if (!map.subscribed) {
-                        subscribe(map.id);
-                      }
-                    }
-                  }}
-                  ><Star fill={all_subscribed ? "bg-primary" : "none"} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {#if all_subscribed}
-                  You are already subscribed to all maps
-                {:else}
-                  Subscribe to all maps
-                {/if}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button on:click={() => location.reload()}
-                  ><RefreshCcw /></Button
-                >
-              </TooltipTrigger>
-              <TooltipContent>Refresh</TooltipContent>
-            </Tooltip>
-          </div>
+          <LoaderCircle size="50" class="animate-spin" />
+          {status}
         </div>
-      </div>
-      <div class="flex flex-col justify-start items-start">
-        <div>
-          <h2 class="text-xl">New update available</h2>
-        </div>
-        <div
-          class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
-        >
-          {#each Object.entries(map_data) as [_, map]}
-            {#if map.new_update}
-              <Card class="m-1 items-center text-center">
-                <CardHeader>
-                  <CardTitle class="text-2xl truncate overflow-ellipsis"
-                    >{map.title}</CardTitle
-                  >
-                </CardHeader>
-                <CardContent>
-                  <img src={map.image_url} alt={map.title} class="rounded-md" />
-                  <div class="mt-1.5 flex flex-row justify-between">
-                    {#if map.new_update}
-                      <Button
-                        on:click={() => download_map(map.id)}
-                        class={!map.new_update
-                          ? "cursor-not-allowed hover:bg-primary"
-                          : ""}
-                      >
-                        <ArrowDownToLine />
-                      </Button>
-                    {/if}
-                    {#if map.subscribed}
-                      <Button on:click={() => unsubscribe(map.id)}>
-                        <Star fill="bg-primary" />
-                      </Button>
+      {:else}
+        <div class="flex flex-col gap-y-5 w-full max-w-6xl">
+          <div class="flex items-center flex-col gap-y-1.5">
+            <h3 class="text-xl {downloading ? '' : 'hidden'} items-center">
+              Downloading: {currentlyDownloading}
+            </h3>
+            <Progress
+              value={queueProgress}
+              class="w-full {downloading ? '' : 'hidden'}"
+            />
+            <div
+              class="items-center flex justify-self-start w-full {downloading
+                ? ''
+                : 'hidden'}"
+            >
+              {queueDownloaded}/{initialQueueLength}
+            </div>
+            <Progress
+              value={downloadProgress}
+              class="w-full {downloading ? '' : 'hidden'}"
+            />
+            <div
+              class="w-full grid {downloading
+                ? 'justify-between grid-cols-3'
+                : 'justify-end flex flex-row'}"
+            >
+              <div class="items-center flex {downloading ? '' : 'hidden'}">
+                {humanFileSize(receivedSize)}/{humanFileSize(totalSize)}
+              </div>
+              <div
+                class="items-center justify-self-center flex {downloading
+                  ? ''
+                  : 'hidden'}"
+              >
+                {downloadStatus}
+              </div>
+              <div class="flex items-center gap-x-1.5 justify-self-end">
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      disabled={allUpdated}
+                      on:click={() => {
+                        for (const map of Object.keys(mapData)) {
+                          if (mapData[map].newUpdate) {
+                            addDownloadQueue([map]);
+                          }
+                        }
+                      }}><ArrowDownToLine /></Button
+                    >
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {#if allUpdated}
+                      All maps are up to date
                     {:else}
-                      <Button on:click={() => subscribe(map.id)}>
-                        <Star fill="none" />
-                      </Button>
+                      Update all maps
                     {/if}
-                  </div>
-                </CardContent>
-              </Card>
-            {/if}
-          {/each}
-        </div>
-      </div>
-      <div class="flex flex-col justify-start items-start">
-        <h2 class="text-xl">Up to date</h2>
-        <div
-          class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
-        >
-          {#each Object.entries(map_data) as [_, map]}
-            {#if map.new_update != true}
-              <Card class="m-1 items-center text-center">
-                <CardHeader>
-                  <CardTitle class="text-2xl truncate overflow-ellipsis"
-                    >{map.title}</CardTitle
-                  >
-                </CardHeader>
-                <CardContent>
-                  <img src={map.image_url} alt={map.title} class="rounded-md" />
-                  <div class="mt-1.5 flex flex-row justify-between">
-                    <Button on:click={() => subscribe(map.id)}>
-                      <Star fill={map.subscribed ? "bg-primary" : "none"} />
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      disabled={allSubscribed}
+                      on:click={() => {
+                        for (const map of Object.keys(mapData)) {
+                          if (!mapData[map].subscribed) {
+                            subscribe(map);
+                          }
+                        }
+                      }}
+                      ><Star fill={allSubscribed ? "bg-primary" : "none"} />
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            {/if}
-          {/each}
-        </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {#if allSubscribed}
+                      You are already subscribed to all maps
+                    {:else}
+                      Subscribe to all maps
+                    {/if}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button on:click={() => location.reload()}
+                      ><RefreshCcw /></Button
+                    >
+                  </TooltipTrigger>
+                  <TooltipContent>Refresh</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex flex-col justify-start items-start {allUpdated
+              ? 'hidden'
+              : ''}"
+          >
+            <h2 class="text-xl">New update available</h2>
+            <div
+              class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {#each Object.keys(mapData) as map}
+                {#if mapData[map].newUpdate}
+                  <Card class="m-1 items-center text-center">
+                    <CardHeader>
+                      <CardTitle class="text-2xl truncate overflow-ellipsis"
+                        >{mapData[map].title}</CardTitle
+                      >
+                    </CardHeader>
+                    <CardContent>
+                      <button
+                        on:click={() => open(mapData[map].modUrl)}
+                        role="link"
+                        tabindex="0"
+                      >
+                        <img
+                          src={mapData[map].imageUrl}
+                          alt={mapData[map].title}
+                          class="rounded-md"
+                        />
+                      </button>
+                      <div class="mt-1.5 flex flex-row justify-between">
+                        {#if mapData[map].newUpdate}
+                          <Button
+                            on:click={() => addDownloadQueue([map])}
+                            class={!mapData[map].newUpdate
+                              ? "cursor-not-allowed hover:bg-primary"
+                              : ""}
+                          >
+                            <ArrowDownToLine />
+                          </Button>
+                        {/if}
+                        {#if mapData[map].subscribed}
+                          <Button on:click={() => unsubscribe(map)}>
+                            <Star fill="bg-primary" />
+                          </Button>
+                        {:else}
+                          <Button on:click={() => subscribe(map)}>
+                            <Star fill="none" />
+                          </Button>
+                        {/if}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild let:builder>
+                            <Button builders={[builder]} class="bg-red-500">
+                              <Trash />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle
+                                >Are you absolutely sure?</AlertDialogTitle
+                              >
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the map: {mapData[map]
+                                  .title}. You can get it back by downloading it
+                                again.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction on:click={() => deleteMod(map)}
+                                >Confirm</AlertDialogAction
+                              >
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                {/if}
+              {/each}
+            </div>
+          </div>
+          <div class="flex flex-col justify-start items-start">
+            <h2 class="text-xl">Up to date</h2>
+            <div
+              class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {#each Object.keys(mapData) as map}
+                {#if mapData[map].newUpdate != true}
+                  <Card class="m-1 items-center text-center">
+                    <CardHeader>
+                      <CardTitle class="text-2xl truncate overflow-ellipsis"
+                        >{mapData[map].title}</CardTitle
+                      >
+                    </CardHeader>
+                    <CardContent>
+                      <button
+                        on:click={() => open(mapData[map].modUrl)}
+                        role="link"
+                        tabindex="0"
+                      >
+                        <img
+                          src={mapData[map].imageUrl}
+                          alt={mapData[map].title}
+                          class="rounded-md"
+                        />
+                      </button>
+                      <div class="mt-1.5 flex flex-row justify-between">
+                        {#if mapData[map].subscribed}
+                          <Button on:click={() => unsubscribe(map)}>
+                            <Star fill="bg-primary" />
+                          </Button>
+                        {:else}
+                          <Button on:click={() => subscribe(map)}>
+                            <Star fill="none" />
+                          </Button>
+                        {/if}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild let:builder>
+                            <Button builders={[builder]} class="bg-red-500">
+                              <Trash />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle
+                                >Are you absolutely sure?</AlertDialogTitle
+                              >
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the map: {mapData[map]
+                                  .title}. You can get it back by downloading it
+                                again.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction on:click={() => deleteMod(map)}
+                                >Confirm</AlertDialogAction
+                              >
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        </div>{/if}
+    {:else}
+      <div class="flex items-center justify-center flex-col">
+        <p>No maps found</p>
+        <br />
+        <p>Is the path correct?</p>
+        <p class="bg-secondary rounded px-1.5 w-fit">{modsPath}</p>
       </div>
-    </div>
-  {:else}
-    <div class="flex items-center justify-center flex-col">
-      <p class="txt">No maps found</p>
-      <p>Is the path correct?</p>
-      <p class="bg-secondary rounded px-1.5 w-fit">{mods_path}</p>
-    </div>
+    {/if}
   {/if}
 </div>

@@ -13,18 +13,17 @@
   "dependencies": {
     "@sveltejs/kit": "^2.5.4",
     "@tauri-apps/api": "^1",
-    "adm-zip": "^0.5.12",
     "bits-ui": "^0.20.0",
     "bottleneck": "^2.19.5",
     "clsx": "^2.1.0",
-    "jszip": "^3.10.1",
     "lucide-svelte": "^0.359.0",
     "mode-watcher": "^0.3.0",
-    "node": "^21.7.1",
     "svelte-radix": "^1.1.0",
+    "svelte-sonner": "^0.3.19",
     "tailwind-merge": "^2.2.2",
     "tailwind-variants": "^0.2.1",
-    "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store#v1"
+    "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store#v1",
+    "tauri-plugin-upload-api": "github:tauri-apps/tauri-plugin-upload#v1"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.1.1",
@@ -32,7 +31,6 @@
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "@tauri-apps/cli": "^1",
     "@tsconfig/svelte": "^5.0.2",
-    "@types/node": "^20.11.30",
     "autoprefixer": "^10.4.18",
     "postcss": "^8.4.36",
     "svelte": "^4.2.8",

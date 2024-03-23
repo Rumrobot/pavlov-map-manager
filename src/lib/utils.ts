@@ -2,8 +2,6 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
-import type { Store } from "tauri-plugin-store-api";
-import { Variable } from "lucide-svelte";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -18,7 +16,7 @@ type FlyAndScaleParams = {
 
 export function humanFileSize(size) {
     var i = size == 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
-    return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+    return (Number((size / Math.pow(1024, i)).toFixed(2)) * 1) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
 export async function setAvatarUrl(oauth_token: string) {

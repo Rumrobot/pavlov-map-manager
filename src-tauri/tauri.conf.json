@@ -6,7 +6,7 @@
     "distDir": "../build"
   },
   "package": {
-    "productName": "pavlov-map-manager",
+    "productName": "Pavlov Map Manager",
     "version": "0.0.0"
   },
   "tauri": {

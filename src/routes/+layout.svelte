@@ -11,6 +11,7 @@
   } from "$components/ui/popover";
   import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
   import { setAvatarUrl } from "$lib/utils";
+  import { Toaster } from "$components/ui/sonner";
 
   const config = new Store(".config.dat");
 
@@ -84,5 +85,6 @@
   </div>
 </header>
 
+<Toaster />
 <ModeWatcher />
 <slot />
