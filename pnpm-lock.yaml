@@ -73,6 +73,9 @@ devDependencies:
   svelte-check:
     specifier: ^3.4.6
     version: 3.6.7(postcss@8.4.36)(svelte@4.2.12)
+  svelte-copy:
+    specifier: ^1.4.1
+    version: 1.4.1(svelte@4.2.12)
   tailwindcss:
     specifier: ^3.4.1
     version: 3.4.1
@@ -1616,6 +1619,14 @@ packages:
       - sass
       - stylus
       - sugarss
+    dev: true
+
+  /svelte-copy@1.4.1(svelte@4.2.12):
+    resolution: {integrity: sha512-ixNNlTfIQWYnQzE0pdMYVCS/2jzMhXm41jmtSvk8EK2Dh+B5sDFEz2xYYo4fVtwtK0dLW5M5ZH/Rs5Jah0r6dw==}
+    peerDependencies:
+      svelte: ^3.55.0 || ^4.0.0
+    dependencies:
+      svelte: 4.2.12
     dev: true
 
   /svelte-hmr@0.15.3(svelte@4.2.12):

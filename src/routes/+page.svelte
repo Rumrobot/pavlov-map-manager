@@ -7,10 +7,15 @@
     CardTitle,
   } from "$components/ui/card";
   import { Progress } from "$components/ui/progress";
-  import { Tooltip, TooltipTrigger } from "$components/ui/tooltip";
-  import TooltipContent from "$components/ui/tooltip/tooltip-content.svelte";
+  import {
+    Tooltip,
+    TooltipTrigger,
+    TooltipContent,
+  } from "$components/ui/tooltip";
+  import { Input } from "$components/ui/input/";
+  import { Label } from "$components/ui/label";
   import { removeFile } from "@tauri-apps/api/fs";
-  import { humanFileSize } from "$lib/utils";
+  import { humanFileSize, setAvatarUrl } from "$lib/utils";
   import { invoke } from "@tauri-apps/api/tauri";
   import { open } from "@tauri-apps/api/shell";
   import {
@@ -20,6 +25,7 @@
     Trash,
     LoaderCircle,
   } from "lucide-svelte";
+  import { copy } from "svelte-copy";
   import { Store } from "tauri-plugin-store-api";
   import Bottleneck from "bottleneck";
   import { download } from "tauri-plugin-upload-api";
@@ -76,6 +82,7 @@
     }
   );
 
+  let newOauthToken: string;
   let oauthToken: string;
   let modsPath: string;
   let allSubscribed: boolean;
@@ -83,6 +90,7 @@
 
   let loading: boolean = true;
   let status: string;
+  let validOauthToken: boolean = false;
 
   let downloading: boolean = false;
   let currentlyDownloading: string;
@@ -412,6 +420,38 @@
     return;
   }
 
+  async function changeOauthToken(input: string) {
+    const newAvatarUrl = await setAvatarUrl(input);
+    oauthToken = input;
+
+    if (await testOauthToken()) {
+      toast.success("OAuth token set successfully");
+    } else {
+      toast.error("Invalid OAuth token");
+      oauthToken = await config.get("oauth_token");
+      return;
+    }
+
+    await config.set("oauth_token", input);
+    await config.set("avatar_url", newAvatarUrl);
+
+    await config.save();
+    location.reload();
+  }
+
+  async function testOauthToken() {
+    console.log("Testing OAuth token");
+    const response = await modioRequest("https://api.mod.io/v1/me", "GET");
+    console.log("after");
+    if (!response.ok) {
+      toast.error("Invalid OAuth token");
+      console.log("Invalid OAuth token");
+      return false;
+    }
+    console.log("Valid OAuth token");
+    return true;
+  }
+
   function checkAll() {
     allUpdated = true;
     allSubscribed = true;
@@ -431,12 +471,18 @@
   }
 
   async function load() {
-    status = "Finding maps";
+    status = "Checking OAuth token";
+    validOauthToken = await testOauthToken();
+    if (!validOauthToken) {
+      console.log("Invalid OAuth token");
+      config.set("avatar_url", null);
+      return;
+    }
 
+    status = "Finding maps";
     try {
       await getMaps();
     } catch (error) {
-      console.log("Error while reading maps");
       return;
     }
 
@@ -449,7 +495,6 @@
       try {
         await getMapData(map);
       } catch (error) {
-        console.log("Error while getting map data for map: " + map);
         i--;
       }
       i++;
@@ -470,7 +515,7 @@
 </script>
 
 <div class="flex justify-center items-center m-5">
-  {#if oauthToken != ("" && null)}
+  {#if validOauthToken}
     {#if maps.length > 0}
       {#if loading}
         <div
@@ -729,5 +774,90 @@
         <p class="bg-secondary rounded px-1.5 w-fit">{modsPath}</p>
       </div>
     {/if}
+  {:else}
+    <div class="flex items-center justify-center flex-col gap-y-3">
+      <p>Invalid OAuth token</p>
+      <h3 class="text-2xl">How to get an OAuth token</h3>
+      <div class="flex flex-col gap-y-1">
+        <p>Go to mod.io -> My account -> Access</p>
+        <button
+          on:click={() => open("https://mod.io/me/access")}
+          class="bg-secondary rounded-md p-1.5 justify-self-center mb-8"
+          role="link"
+          tabindex="0">https://mod.io/me/access</button
+        >
+        <div class="flex">
+          <p>1. Give the client a name, e.g.</p>
+          <Tooltip>
+            <TooltipTrigger>
+              <button
+                class="bg-secondary rounded-md ml-1 px-1"
+                use:copy={"Pavlov Map Downloader"}
+                on:click={() => toast.success("Copied to clipboard")}
+              >
+                Pavlov Map Downloader
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Click to copy</TooltipContent>
+          </Tooltip>
+          <p>, and click create.</p>
+        </div>
+        <div class="flex">
+          <p>2. Give the token a name, e.g.</p>
+          <Tooltip>
+            <TooltipTrigger>
+              <button
+                class="bg-secondary rounded-md ml-1 px-1"
+                use:copy={"Pavlov Map Downloader"}
+                on:click={() => toast.success("Copied to clipboard")}
+              >
+                Token
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Click to copy</TooltipContent>
+          </Tooltip>
+          <p>, and select</p>
+          <p class="bg-secondary rounded-md mx-1 px-1">Read + Write</p>
+          <p>in the dropdown menu.</p>
+        </div>
+        <p>3. Copy the token, then paste it here and click confirm.</p>
+      </div>
+      <div class="flex flex-col gap-y-1.5 justify-self-center items-start mt-5">
+        <Label>Mod.io OAuth token</Label>
+        <div class="flex flex-row gap-x-1">
+          <Input
+            placeholder={oauthToken == null ? "Token" : oauthToken}
+            bind:value={newOauthToken}
+          ></Input>
+          <AlertDialog>
+            <AlertDialogTrigger asChild let:builder>
+              <Button builders={[builder]} variant="outline">Confirm</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently remove the
+                  old OAuth token from the application. If you dont have it
+                  written down, then it will be lost forever.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  on:click={() => changeOauthToken(newOauthToken)}
+                  >Confirm</AlertDialogAction
+                >
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+      <img
+        src="infographic.png"
+        alt="How to get a OAuth token"
+        class="rounded-md max-w-[1920px] w-[70%]"
+      />
+    </div>
   {/if}
 </div>

@@ -32,7 +32,7 @@ export async function setAvatarUrl(oauth_token: string) {
       return data.avatar.thumb_100x100;
     } catch (error) {
       console.error("Error:", error);
-      return "https://www.freeiconspng.com/uploads/error-icon-4.png";
+      return;
     }
   }
 
