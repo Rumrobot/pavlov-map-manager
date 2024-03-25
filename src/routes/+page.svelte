@@ -327,9 +327,9 @@
         fileInfo.download.binary_url,
         `${map}.zip`,
         (progress, total) => {
-          receivedSize = progress;
+          receivedSize += progress;
           totalSize = total;
-          downloadProgress = (progress / total) * 100;
+          downloadProgress = (receivedSize / total) * 100;
         },
         headers
       );
