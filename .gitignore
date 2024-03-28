@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+*.zip
+
 .DS_Store
 /build
 /.svelte-kit

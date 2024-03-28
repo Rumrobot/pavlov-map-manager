@@ -182,7 +182,6 @@
       });
     } catch (error) {
       mapData[map].installedLocally = false;
-      console.log("Map not installed locally: " + map);
     }
     mapData[map].currentVersion = currentVersion as string;
 
@@ -206,30 +205,39 @@
   }
 
   async function getSubscriptions() {
-    const response = await modioRequest(
-      `https://api.mod.io/v1/me/subscribed?game_id=3959`,
-      "GET"
-    );
+    let allRead = false;
+    let page = 0;
 
-    if (!response.ok) {
-      toast.error("Error while fetching subscribed maps");
-      return;
-    }
-    const data = await response.json();
+    while (!allRead) {
+      const response = await modioRequest(
+        `https://api.mod.io/v1/me/subscribed?game_id=3959&tags=Map`,
+        "GET"
+      );
+      if (!response.ok) {
+        toast.error("Error while fetching subscribed maps");
+        return;
+      }
+      const data = await response.json();
 
-    for (const map of data.data) {
-      subscriptions.push(map.id);
-      maps.push(map.id);
+      for (const map of data.data) {
+        subscriptions.push(map.id);
+        maps.push(map.id);
 
-      mapData[map.id].title = map.name;
-      mapData[map.id].imageUrl = map.logo.thumb_1280x720;
-      mapData[map.id].modUrl = map.profile_url;
+        mapData[map.id].title = map.name;
+        mapData[map.id].imageUrl = map.logo.thumb_1280x720;
+        mapData[map.id].modUrl = map.profile_url;
 
-      const platforms = map.platforms;
-      for (const platform of platforms) {
-        if (platform.platform == "windows") {
-          mapData[map.id].latestVersion = platform.modfile_live;
+        for (const platform of map.platforms) {
+          if (platform.platform == "windows") {
+            mapData[map.id].latestVersion = platform.modfile_live;
+          }
         }
+      }
+
+      if (data.result_count == 100) {
+        page++;
+      } else {
+        allRead = true;
       }
     }
     return;
@@ -361,6 +369,10 @@
       contents: mapData[map].latestVersion.toString(),
     });
 
+    totalSize = 0;
+    receivedSize = 0;
+    downloadProgress = 0;
+
     downloadStatus = "Done";
     mapData[map].newUpdate = false;
     return;
@@ -440,15 +452,11 @@
   }
 
   async function testOauthToken() {
-    console.log("Testing OAuth token");
     const response = await modioRequest("https://api.mod.io/v1/me", "GET");
-    console.log("after");
     if (!response.ok) {
       toast.error("Invalid OAuth token");
-      console.log("Invalid OAuth token");
       return false;
     }
-    console.log("Valid OAuth token");
     return true;
   }
 
@@ -464,7 +472,6 @@
     for (const map of maps) {
       if (!mapData[map].subscribed) {
         allSubscribed = false;
-        console.log("Map not subscribed: " + map);
       }
     }
     return;
@@ -474,7 +481,6 @@
     status = "Checking OAuth token";
     validOauthToken = await testOauthToken();
     if (!validOauthToken) {
-      console.log("Invalid OAuth token");
       config.set("avatar_url", null);
       return;
     }
