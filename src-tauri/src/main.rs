@@ -5,7 +5,7 @@ use std::fs;
 use std::fs::File;
 
 #[tauri::command]
-fn list_dir(path: String) -> Result<Vec<String>, String> {
+fn ls(path: String) -> Result<Vec<String>, String> {
     // Read the directory
     let parsed_path = path.replace("%user%", &whoami::username());
     let entries = match fs::read_dir(&parsed_path) {
@@ -115,7 +115,7 @@ fn main() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_upload::init())
         .invoke_handler(tauri::generate_handler![
-            list_dir,
+            ls,
             read_file,
             extract_zip,
             write_text_file,

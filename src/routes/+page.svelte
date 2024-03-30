@@ -106,7 +106,7 @@
   async function getMaps() {
     const path = await config.get("mods_path");
     try {
-      maps = await invoke("list_dir", { path });
+      maps = await invoke("ls", { path });
 
       maps = maps.filter((map: string) => map.startsWith("UGC"));
       maps = maps.map((map: string) => map.split("UGC")[1]);
@@ -504,6 +504,20 @@
         i--;
       }
       i++;
+    }
+
+    status = "Removing old .zip files";
+    try {
+      const files: Array<string> = await invoke("ls", {
+        path: "./",
+      });
+      for (const file of files) {
+        if (file.endsWith(".zip")) {
+          await removeFile(file);
+        }
+      }
+    } catch (error) {
+      return;
     }
   }
 
