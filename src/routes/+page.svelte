@@ -24,8 +24,8 @@
     Star,
     Trash,
     LoaderCircle,
+    ExternalLink,
   } from "lucide-svelte";
-  import { copy } from "svelte-copy";
   import { Store } from "tauri-plugin-store-api";
   import Bottleneck from "bottleneck";
   import { download } from "tauri-plugin-upload-api";
@@ -580,12 +580,11 @@
               >
                 {downloadStatus}
               </div>
-              <div class="flex items-center gap-x-1.5 justify-self-end">
+              <div class="flex items-center gap-1.5 justify-self-end">
                 <Tooltip>
                   <TooltipTrigger>
                     <Button
                       disabled={allUpdated}
-                      class={allSubscribed ? "cursor-not-allowed" : ""}
                       on:click={() => {
                         for (const map of Object.keys(mapData)) {
                           if (mapData[map].newUpdate) {
@@ -607,7 +606,6 @@
                   <TooltipTrigger>
                     <Button
                       disabled={allSubscribed}
-                      class={allSubscribed ? "cursor-not-allowed" : "cursor-not-allowed"}
                       on:click={() => {
                         for (const map of Object.keys(mapData)) {
                           if (!mapData[map].subscribed) {
@@ -679,39 +677,45 @@
                         {/if}
                         {#if mapData[map].subscribed}
                           <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="bg-primary" />
+                            <Star fill="urmum" />
                           </Button>
                         {:else}
                           <Button on:click={() => subscribe(map)}>
-                            <Star fill="none" />
+                            <Star />
                           </Button>
                         {/if}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild let:builder>
-                            <Button builders={[builder]} class="bg-destructive">
-                              <Trash />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle
-                                >Are you absolutely sure?</AlertDialogTitle
+                        {#if mapData[map].installedLocally}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild let:builder>
+                              <Button
+                                builders={[builder]}
+                                class="bg-destructive"
                               >
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete the map: {mapData[map]
-                                  .title}. You can get it back by downloading it
-                                again.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction on:click={() => deleteMod(map)}
-                                >Confirm</AlertDialogAction
-                              >
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle
+                                  >Are you absolutely sure?</AlertDialogTitle
+                                >
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete the map: {mapData[map]
+                                    .title}. You can get it back by downloading
+                                  it again.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  on:click={() => deleteMod(map)}
+                                  >Confirm</AlertDialogAction
+                                >
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        {/if}
                       </div>
                     </CardContent>
                   </Card>
@@ -804,49 +808,42 @@
         <p>Go to mod.io -> My account -> Access</p>
         <button
           on:click={() => open("https://mod.io/me/access")}
-          class="bg-secondary rounded-md p-1.5 justify-self-center mb-8"
+          class="bg-primary text-primary-foreground rounded-md p-1.5 justify-self-center mb-6 gap-1 flex items-center justify-center"
           role="link"
-          tabindex="0">https://mod.io/me/access</button
+          tabindex="0"
+        >
+          <ExternalLink />
+          https://mod.io/me/access</button
         >
         <div class="flex">
           <p>1. Give the client a name, e.g.</p>
-          <Tooltip>
-            <TooltipTrigger>
-              <button
-                class="bg-secondary rounded-md ml-1 px-1"
-                use:copy={"Pavlov Map Downloader"}
-                on:click={() => toast.success("Copied to clipboard")}
-              >
-                Pavlov Map Downloader
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Click to copy</TooltipContent>
-          </Tooltip>
+          <p
+            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1 flex items-center"
+          >
+            Pavlov Map Downloader
+          </p>
           <p>, and click create.</p>
         </div>
         <div class="flex">
           <p>2. Give the token a name, e.g.</p>
-          <Tooltip>
-            <TooltipTrigger>
-              <button
-                class="bg-secondary rounded-md ml-1 px-1"
-                use:copy={"Pavlov Map Downloader"}
-                on:click={() => toast.success("Copied to clipboard")}
-              >
-                Token
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Click to copy</TooltipContent>
-          </Tooltip>
+          <p
+            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1"
+          >
+            Token
+          </p>
           <p>, and select</p>
-          <p class="bg-secondary rounded-md mx-1 px-1">Read + Write</p>
+          <p
+            class="bg-primary shadow-lg text-primary-foreground rounded-md mx-1 px-1"
+          >
+            Read + Write
+          </p>
           <p>in the dropdown menu.</p>
         </div>
         <p>3. Copy the token, then paste it here and click confirm.</p>
       </div>
       <div class="flex flex-col gap-y-1.5 justify-self-center items-start mt-5">
         <Label>Mod.io OAuth token</Label>
-        <div class="flex flex-row gap-x-1">
+        <div class="flex flex-row gap-1">
           <Input
             placeholder={oauthToken == null ? "Token" : oauthToken}
             bind:value={newOauthToken}

@@ -53,7 +53,7 @@
     await config.save();
   }
 
-  async function change_mods_path(input: string) {
+    async function change_mods_path(input: string) {
     await config.set("mods_path", input);
     mods_path = input;
     await config.save();
@@ -66,13 +66,13 @@
       <Label>Theme</Label>
       <div class="flex flex-row gap-x-2">
         <Button
-          variant={theme === "dark" ? "secondary" : "default"}
+          disabled={theme === "dark"}
           on:click={() => setTheme("dark")}
         >
           Dark
         </Button>
         <Button
-          variant={theme === "light" ? "secondary" : "default"}
+          disabled={theme === "light"}
           on:click={() => setTheme("light")}
         >
           Light

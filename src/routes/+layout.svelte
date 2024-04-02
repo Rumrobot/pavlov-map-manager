@@ -1,9 +1,17 @@
 <script lang="ts">
   import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
-  import { ArrowBigLeft, Menu } from "lucide-svelte";
+  import {
+    ArrowLeft,
+    Layers2,
+    Maximize,
+    Menu,
+    Minus,
+    X,
+  } from "lucide-svelte";
   import "../app.pcss";
   import { ModeWatcher, setMode } from "mode-watcher";
+  import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
   import {
     Popover,
     PopoverContent,
@@ -12,15 +20,19 @@
   import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
   import { setAvatarUrl } from "$lib/utils";
   import { Toaster } from "$components/ui/sonner";
+  import { onMount } from "svelte";
+  import { appWindow } from "@tauri-apps/api/window";
 
   const config = new Store(".config.dat");
+  let fullscreen = false;
 
   let theme: string;
   let mods_path: string;
   let oauth_token: string;
   let avatar_url: string;
 
-  (async () => {
+  onMount(async () => {
+    fullscreen = await appWindow.isMaximized();
     theme = await config.get("theme");
     mods_path = await config.get("mods_path");
     oauth_token = await config.get("oauth_token");
@@ -44,44 +56,75 @@
       setAvatarUrl(oauth_token);
       await config.set("avatar_url", avatar_url);
     }
-  })();
+  });
+
+  const resize = async () => fullscreen = await appWindow.isMaximized();
 </script>
 
+<svelte:window on:resize={resize} />
+
 <header
-  class="sticky top-0 z-40 p-3 w-full border-b border-border bg-background/60 shadow-sm backdrop-blur justify-between flex flex-row"
+  class="sticky top-0 z-40 w-full border-b border-border bg-background/60 shadow-sm backdrop-blur justify-between flex flex-row"
 >
-  <div class="flex justify-start items-center">
-    <Button
-      on:click={() => history.back()}
-      variant="outline"
-      class="items-center"
-    >
-      <ArrowBigLeft />
-    </Button>
-  </div>
-  <div class="flex justify-end items-center">
-    <Popover>
-      <PopoverTrigger asChild let:builder>
-        <Button
-          builders={[builder]}
-          class="relative h-10 w-10 min-w-10 items-center justify-center rounded-full z-60"
-          size="icon"
-          variant="outline"
-        >
-          {#if oauth_token == null}
-            <Menu />
-          {:else}
+  <div data-tauri-drag-region class="p-3 justify-between flex flex-row w-full">
+    <div class="flex justify-start items-center">
+      <Button
+        on:click={() => history.back()}
+        variant="default"
+        class="items-center"
+      >
+        <ArrowLeft />
+      </Button>
+    </div>
+    <div class="flex justify-end items-center">
+      <Popover>
+        <PopoverTrigger asChild let:builder>
+          <Button
+            builders={[builder]}
+            class="h-10 w-10 rounded-full"
+            size="icon"
+            variant="ghost"
+          >
             <Avatar>
               <AvatarImage src={avatar_url} />
-              <AvatarFallback><Menu /></AvatarFallback>
+              <AvatarFallback class="bg-primary"
+                ><Menu class="text-primary-foreground" /></AvatarFallback
+              >
             </Avatar>
-          {/if}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent class="w-80 items-center flex justify-center">
-        <a href="/settings">Settings</a>
-      </PopoverContent>
-    </Popover>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent class="w-80 items-center flex justify-center">
+          <a href="/settings">Settings</a>
+        </PopoverContent>
+      </Popover>
+    </div>
+  </div>
+  <div class="flex items-center self-start">
+    <Button
+      on:click={() => appWindow.minimize()}
+      variant="ghost"
+      class="rounded-none shadow-none"
+    >
+      <Minus />
+    </Button>
+    <Button
+      on:click={() => appWindow.toggleMaximize()}
+      variant="ghost"
+      class="rounded-none shadow-none"
+    >
+      {#if fullscreen}
+        <Layers2 />
+      {:else}
+        <Maximize />
+      {/if}
+    </Button>
+    <Button
+      on:click={() => appWindow.close()}
+      variant="ghost"
+      class="hover:bg-destructive rounded-none shadow-none"
+    >
+      <X />
+    </Button>
   </div>
 </header>
 

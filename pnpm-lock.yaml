@@ -26,6 +26,9 @@ dependencies:
   mode-watcher:
     specifier: ^0.3.0
     version: 0.3.0(svelte@4.2.12)
+  overlayscrollbars-svelte:
+    specifier: ^0.5.4
+    version: 0.5.4(overlayscrollbars@2.7.0)(svelte@4.2.12)
   svelte-radix:
     specifier: ^1.1.0
     version: 1.1.0(svelte@4.2.12)
@@ -73,9 +76,6 @@ devDependencies:
   svelte-check:
     specifier: ^3.4.6
     version: 3.6.7(postcss@8.4.36)(svelte@4.2.12)
-  svelte-copy:
-    specifier: ^1.4.1
-    version: 1.4.1(svelte@4.2.12)
   tailwindcss:
     specifier: ^3.4.1
     version: 3.4.1
@@ -1304,6 +1304,20 @@ packages:
       wrappy: 1.0.2
     dev: true
 
+  /overlayscrollbars-svelte@0.5.4(overlayscrollbars@2.7.0)(svelte@4.2.12):
+    resolution: {integrity: sha512-QvcC9jdP5kweoKyi+40/+5ynBxY0RwdGlpNX0P1OpK1sGQWlCBUO33VHVDMrRPc1Ki7Q0ZtGbkOZt/pkFXHCWg==}
+    peerDependencies:
+      overlayscrollbars: ^2.0.0
+      svelte: '>=3.54.0'
+    dependencies:
+      overlayscrollbars: 2.7.0
+      svelte: 4.2.12
+    dev: false
+
+  /overlayscrollbars@2.7.0:
+    resolution: {integrity: sha512-ApBoB8NZyPLqmfuhzYsNVYNRbqQ91fUEWOOhnCp3JJ2/vvKOKHq8jC4ZBgxH5zHKB+5FVidQ8pVIsRyPrry3Dg==}
+    dev: false
+
   /parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
@@ -1619,14 +1633,6 @@ packages:
       - sass
       - stylus
       - sugarss
-    dev: true
-
-  /svelte-copy@1.4.1(svelte@4.2.12):
-    resolution: {integrity: sha512-ixNNlTfIQWYnQzE0pdMYVCS/2jzMhXm41jmtSvk8EK2Dh+B5sDFEz2xYYo4fVtwtK0dLW5M5ZH/Rs5Jah0r6dw==}
-    peerDependencies:
-      svelte: ^3.55.0 || ^4.0.0
-    dependencies:
-      svelte: 4.2.12
     dev: true
 
   /svelte-hmr@0.15.3(svelte@4.2.12):
