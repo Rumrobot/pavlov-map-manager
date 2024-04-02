@@ -85,8 +85,8 @@
   let newOauthToken: string;
   let oauthToken: string;
   let modsPath: string;
-  let allSubscribed: boolean;
-  let allUpdated: boolean;
+  $: allSubscribed = false;
+  $: allUpdated = false;
 
   let loading: boolean = true;
   let status: string;
@@ -295,6 +295,10 @@
     currentlyDownloading = mapData[map].title;
     downloadStatus = "Fetching file info";
 
+    totalSize = 0;
+    receivedSize = 0;
+    downloadProgress = 0;
+
     // Get the file info
     const fileInfoResponse = await modioRequest(
       `https://api.mod.io/v1/games/3959/mods/${map}/files/${mapData[map].latestVersion}`,
@@ -369,10 +373,6 @@
       contents: mapData[map].latestVersion.toString(),
     });
 
-    totalSize = 0;
-    receivedSize = 0;
-    downloadProgress = 0;
-
     downloadStatus = "Done";
     mapData[map].newUpdate = false;
     return;
@@ -383,6 +383,9 @@
     await downloadMap(queue[0]);
     queue.shift();
 
+    queue = queue;
+    checkAll();
+
     if (queue.length > 0) {
       queueDownloaded++;
       queueProgress = (queueDownloaded / initialQueueLength) * 100;
@@ -392,24 +395,26 @@
       queueProgress = 0;
       queueDownloaded = 0;
       initialQueueLength = 0;
-      checkAll();
       downloading = false;
       return;
     }
   }
 
   async function addDownloadQueue(maps: Array<string>) {
+    let i: number = 0;
     for (const map of maps) {
-      if (mapData[map].newUpdate && !queue.includes(map)) {
+      if (mapData[map].newUpdate && !queue.includes(map.toString())) {
         queue.push(map);
-      } else {
+        queue = queue;
+        i++;
       }
     }
     if (initialQueueLength == 0) {
       downloadQueue();
     }
-    initialQueueLength = initialQueueLength + maps.length;
+    initialQueueLength = initialQueueLength + i;
 
+    checkAll();
     return;
   }
 
@@ -465,7 +470,7 @@
     allSubscribed = true;
 
     for (const map of maps) {
-      if (mapData[map].newUpdate) {
+      if (mapData[map].newUpdate && !queue.includes(map.toString())) {
         allUpdated = false;
       }
     }
@@ -589,6 +594,12 @@
                         for (const map of Object.keys(mapData)) {
                           if (mapData[map].newUpdate) {
                             addDownloadQueue([map]);
+                            console.log(
+                              "Added to queue: " +
+                                map +
+                                "updated: " +
+                                mapData[map].newUpdate
+                            );
                           }
                         }
                       }}><ArrowDownToLine /></Button
@@ -626,19 +637,12 @@
                     {/if}
                   </TooltipContent>
                 </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Button on:click={() => location.reload()}
-                      ><RefreshCcw /></Button
-                    >
-                  </TooltipTrigger>
-                  <TooltipContent>Refresh</TooltipContent>
-                </Tooltip>
               </div>
             </div>
           </div>
           <div
-            class="flex flex-col justify-start items-start {allUpdated
+            class="flex flex-col justify-start items-start {allUpdated &&
+            queue.length == 0
               ? 'hidden'
               : ''}"
           >
@@ -667,14 +671,12 @@
                         />
                       </button>
                       <div class="mt-1.5 flex flex-row justify-between">
-                        {#if mapData[map].newUpdate}
-                          <Button
-                            on:click={() => addDownloadQueue([map])}
-                            class={!mapData[map].newUpdate ? "disabled" : ""}
-                          >
-                            <ArrowDownToLine />
-                          </Button>
-                        {/if}
+                        <Button
+                          on:click={() => addDownloadQueue([map])}
+                          disabled={queue.includes(map.toString())}
+                        >
+                          <ArrowDownToLine />
+                        </Button>
                         {#if mapData[map].subscribed}
                           <Button on:click={() => unsubscribe(map)}>
                             <Star fill="urmum" />
