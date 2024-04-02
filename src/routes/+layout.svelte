@@ -1,7 +1,17 @@
 <script lang="ts">
   import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
-  import { ArrowLeft, Layers2, Maximize, Menu, Minus, X } from "lucide-svelte";
+  import {
+    ArrowLeft,
+    ArrowRight,
+    Layers2,
+    Maximize,
+    Menu,
+    Minus,
+    RotateCw,
+    Settings,
+    X,
+  } from "lucide-svelte";
   import "overlayscrollbars/overlayscrollbars.css";
   import "../app.pcss";
   import { ModeWatcher, setMode, mode } from "mode-watcher";
@@ -75,74 +85,83 @@
 <svelte:window on:resize={resize} />
 
 <header
-  class="sticky top-0 z-40 w-full border-b border-border bg-background/60 shadow-sm backdrop-blur justify-between flex flex-row"
+  data-tauri-drag-region
+  class="sticky h-[42px] top-0 z-40 w-full border-b border-border bg-background/60 shadow-sm backdrop-blur justify-between flex flex-row"
 >
-  <div data-tauri-drag-region class="p-3 justify-between flex flex-row w-full">
-    <div class="flex justify-start items-center">
+  <div class="flex justify-start items-center py-1 px-2 gap-1">
+    <Button on:click={() => history.back()} variant="ghost" size="icon">
+      <!-- TODO: Use navigation.canGoBack -->
+      <ArrowLeft class="w-6 h-6" />
+    </Button>
+    <Button on:click={() => history.forward()} variant="ghost" size="icon">
+      <!-- TODO: Use navigation.canGoForward -->
+      <ArrowRight class="w-6 h-6" />
+    </Button>
+    <Button on:click={() => location.reload()} variant="ghost" size="icon">
+      <RotateCw class="w-6 h-6" />
+    </Button>
+  </div>
+  <div class="flex items-center gap-2">
+    <Popover>
+      <PopoverTrigger asChild let:builder>
+        <Button builders={[builder]} size="icon" variant="ghost">
+          <Menu />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent class="flex flex-col min-w-[220px]">
+        <div class="py-2 flex items-center justify-center">
+          <Avatar class="h-28 w-28">
+            <AvatarImage src={avatar_url} />
+            <AvatarFallback>{oauth_token ? "U" : "A"}</AvatarFallback>
+          </Avatar>
+        </div>
+        <a
+          href="/settings"
+          class="flex items-center gap-1 text-foreground/70 hover:bg-muted hover:text-foreground px-4 py-2 text-sm rounded-md"
+          ><Settings class="w-6 h-6" /> Settings</a
+        >
+        <a
+          href="https://mod.io"
+          target="_blank"
+          class="flex items-center gap-1 text-foreground/70 hover:bg-muted hover:text-foreground px-4 py-2 text-sm rounded-md"
+          ><img src="/mod-io-icon.png" class="rounded-full w-6 h-6" /> Mod.io</a
+        >
+      </PopoverContent>
+    </Popover>
+    <div>
       <Button
-        on:click={() => history.back()}
-        variant="default"
-        class="items-center"
+        on:click={() => appWindow.minimize()}
+        variant="ghost"
+        class="rounded-none h-full"
       >
-        <ArrowLeft />
+        <Minus />
+      </Button>
+      <Button
+        on:click={() => appWindow.toggleMaximize()}
+        variant="ghost"
+        class="rounded-none h-full"
+      >
+        {#if fullscreen}
+          <Layers2 />
+        {:else}
+          <Maximize />
+        {/if}
+      </Button>
+      <Button
+        on:click={() => appWindow.close()}
+        variant="ghost"
+        class="h-full hover:bg-destructive rounded-none"
+      >
+        <X />
       </Button>
     </div>
-    <div class="flex justify-end items-center">
-      <Popover>
-        <PopoverTrigger asChild let:builder>
-          <Button
-            builders={[builder]}
-            class="h-10 w-10 rounded-full"
-            size="icon"
-            variant="ghost"
-          >
-            <Avatar>
-              <AvatarImage src={avatar_url} />
-              <AvatarFallback class="bg-primary"
-                ><Menu class="text-primary-foreground" /></AvatarFallback
-              >
-            </Avatar>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent class="w-80 items-center flex justify-center">
-          <a href="/settings">Settings</a>
-        </PopoverContent>
-      </Popover>
-    </div>
-  </div>
-  <div class="flex items-center self-start">
-    <Button
-      on:click={() => appWindow.minimize()}
-      variant="ghost"
-      class="rounded-none shadow-none"
-    >
-      <Minus />
-    </Button>
-    <Button
-      on:click={() => appWindow.toggleMaximize()}
-      variant="ghost"
-      class="rounded-none shadow-none"
-    >
-      {#if fullscreen}
-        <Layers2 />
-      {:else}
-        <Maximize />
-      {/if}
-    </Button>
-    <Button
-      on:click={() => appWindow.close()}
-      variant="ghost"
-      class="hover:bg-destructive rounded-none shadow-none"
-    >
-      <X />
-    </Button>
   </div>
 </header>
 
 <Toaster />
 <ModeWatcher />
 <div
-  class="h-[calc(100vh-4rem)]"
+  class="h-[calc(100vh-42px)]"
   bind:this={contentEl}
   data-overlayscrollbars-initialize
 >

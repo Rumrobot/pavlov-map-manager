@@ -689,7 +689,7 @@
                             <AlertDialogTrigger asChild let:builder>
                               <Button
                                 builders={[builder]}
-                                class="bg-destructive"
+                                variant="destructive"
                               >
                                 <Trash />
                               </Button>
@@ -760,7 +760,7 @@
                         {/if}
                         <AlertDialog>
                           <AlertDialogTrigger asChild let:builder>
-                            <Button builders={[builder]} class="bg-destructive">
+                            <Button builders={[builder]} variant="destructive">
                               <Trash />
                             </Button>
                           </AlertDialogTrigger>
