@@ -1,11 +1,10 @@
 # Todo
 
 - Clean up the code ofc.
-- Fix colors
 
 ## Bugs
 - Progress bar not resetting
-- Download all adds twice
+- Download adds twice
 - Download all not grey out after click
 
 ## New features

@@ -15,7 +15,7 @@
   import { Input } from "$components/ui/input/";
   import { Label } from "$components/ui/label";
   import { removeFile } from "@tauri-apps/api/fs";
-  import { humanFileSize, setAvatarUrl } from "$lib/utils";
+  import { humanFileSize } from "$lib/utils";
   import { invoke } from "@tauri-apps/api/tauri";
   import { open } from "@tauri-apps/api/shell";
   import {
@@ -42,6 +42,7 @@
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
   import { get } from "svelte/store";
+  import { onMount } from "svelte";
 
   const config = new Store(".config.dat");
   const limiter = new Bottleneck({
@@ -84,6 +85,7 @@
 
   let newOauthToken: string;
   let oauthToken: string;
+  let theme: string;
   let modsPath: string;
   let allSubscribed: boolean;
   let allUpdated: boolean;
@@ -433,7 +435,6 @@
   }
 
   async function changeOauthToken(input: string) {
-    const newAvatarUrl = await setAvatarUrl(input);
     oauthToken = input;
 
     if (await testOauthToken()) {
@@ -445,7 +446,6 @@
     }
 
     await config.set("oauth_token", input);
-    await config.set("avatar_url", newAvatarUrl);
 
     await config.save();
     location.reload();
@@ -481,7 +481,6 @@
     status = "Checking OAuth token";
     validOauthToken = await testOauthToken();
     if (!validOauthToken) {
-      config.set("avatar_url", null);
       return;
     }
 
@@ -521,17 +520,18 @@
     }
   }
 
-  (async () => {
+  onMount(async () => {
     loading = true;
     oauthToken = await config.get("oauth_token");
     modsPath = await config.get("mods_path");
+    theme = await config.get("theme");
 
     await load();
     checkAll();
 
     status = "Done";
     loading = false;
-  })();
+  });
 </script>
 
 <div class="flex justify-center items-center m-5">
@@ -614,7 +614,11 @@
                         }
                       }}
                       ><Star
-                        fill={allSubscribed ? "bg-primary-foreground" : "none"}
+                        fill={allSubscribed
+                          ? theme == "dark"
+                            ? "#18181b"
+                            : "#f5f5f7"
+                          : "none"}
                       />
                     </Button>
                   </TooltipTrigger>
@@ -675,15 +679,23 @@
                             <ArrowDownToLine />
                           </Button>
                         {/if}
-                        {#if mapData[map].subscribed}
-                          <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="urmum" />
-                          </Button>
-                        {:else}
-                          <Button on:click={() => subscribe(map)}>
-                            <Star />
-                          </Button>
-                        {/if}
+                        <Button
+                          on:click={() => {
+                            if (mapData[map].subscribed) {
+                              unsubscribe(map);
+                            } else {
+                              subscribe(map);
+                            }
+                          }}
+                        >
+                          <Star
+                            fill={mapData[map].subscribed
+                              ? theme == "dark"
+                                ? "#18181b"
+                                : "#f5f5f7"
+                              : "none"}
+                          />
+                        </Button>
                         {#if mapData[map].installedLocally}
                           <AlertDialog>
                             <AlertDialogTrigger asChild let:builder>
@@ -749,15 +761,23 @@
                         />
                       </button>
                       <div class="mt-1.5 flex flex-row justify-between">
-                        {#if mapData[map].subscribed}
-                          <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="bg-primary-foreground" />
-                          </Button>
-                        {:else}
-                          <Button on:click={() => subscribe(map)}>
-                            <Star fill="none" />
-                          </Button>
-                        {/if}
+                        <Button
+                          on:click={() => {
+                            if (mapData[map].subscribed) {
+                              unsubscribe(map);
+                            } else {
+                              subscribe(map);
+                            }
+                          }}
+                        >
+                          <Star
+                            fill={mapData[map].subscribed
+                              ? theme == "dark"
+                                ? "#18181b"
+                                : "#f5f5f7"
+                              : "none"}
+                          />
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild let:builder>
                             <Button builders={[builder]} class="bg-destructive">

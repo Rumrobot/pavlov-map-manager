@@ -15,7 +15,6 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
-  import { setAvatarUrl } from "$lib/utils";
   import {
     Tooltip,
     TooltipContent,
@@ -44,12 +43,9 @@
   }
 
   async function change_oauth_token(input: string) {
-    const new_avatar_url = await setAvatarUrl(input);
     oauth_token = input;
 
     await config.set("oauth_token", input);
-    await config.set("avatar_url", new_avatar_url);
-
     await config.save();
   }
 
