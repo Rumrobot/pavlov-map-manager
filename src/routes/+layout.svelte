@@ -1,17 +1,10 @@
 <script lang="ts">
   import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
-  import {
-    ArrowLeft,
-    Layers2,
-    Maximize,
-    Menu,
-    Minus,
-    X,
-  } from "lucide-svelte";
+  import { ArrowLeft, Layers2, Maximize, Menu, Minus, X } from "lucide-svelte";
+  import "overlayscrollbars/overlayscrollbars.css";
   import "../app.pcss";
-  import { ModeWatcher, setMode } from "mode-watcher";
-  import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
+  import { ModeWatcher, setMode, mode } from "mode-watcher";
   import {
     Popover,
     PopoverContent,
@@ -22,6 +15,16 @@
   import { Toaster } from "$components/ui/sonner";
   import { onMount } from "svelte";
   import { appWindow } from "@tauri-apps/api/window";
+  import { OverlayScrollbars } from "overlayscrollbars";
+
+  let contentEl: HTMLDivElement;
+  let scrollbar: OverlayScrollbars;
+  $: if (scrollbar)
+    scrollbar.options({
+      scrollbars: {
+        theme: $mode === "dark" ? "os-theme-light" : "os-theme-dark",
+      },
+    });
 
   const config = new Store(".config.dat");
   let fullscreen = false;
@@ -32,6 +35,14 @@
   let avatar_url: string;
 
   onMount(async () => {
+    scrollbar = OverlayScrollbars(contentEl, {
+      overflow: {
+        x: "hidden",
+      },
+      scrollbars: {
+        theme: $mode === "dark" ? "os-theme-light" : "os-theme-dark",
+      },
+    });
     fullscreen = await appWindow.isMaximized();
     theme = await config.get("theme");
     mods_path = await config.get("mods_path");
@@ -58,7 +69,7 @@
     }
   });
 
-  const resize = async () => fullscreen = await appWindow.isMaximized();
+  const resize = async () => (fullscreen = await appWindow.isMaximized());
 </script>
 
 <svelte:window on:resize={resize} />
@@ -130,4 +141,10 @@
 
 <Toaster />
 <ModeWatcher />
-<slot />
+<div
+  class="h-[calc(100vh-4rem)]"
+  bind:this={contentEl}
+  data-overlayscrollbars-initialize
+>
+  <slot />
+</div>

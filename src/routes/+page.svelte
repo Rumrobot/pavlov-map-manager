@@ -792,91 +792,92 @@
             </div>
           </div>
         </div>{/if}
-    {:else}
-      <div class="flex items-center justify-center flex-col">
+        {:else}
+        <div class="flex items-center justify-center flex-col">
         <p>No maps found</p>
         <br />
         <p>Is the path correct?</p>
         <p class="bg-secondary rounded px-1.5 w-fit">{modsPath}</p>
       </div>
-    {/if}
-  {:else}
-    <div class="flex items-center justify-center flex-col gap-y-3">
-      <p>Invalid OAuth token</p>
-      <h3 class="text-2xl">How to get an OAuth token</h3>
-      <div class="flex flex-col gap-y-1">
-        <p>Go to mod.io -> My account -> Access</p>
-        <button
+      {/if}
+      {:else}
+      <div class="flex items-center justify-center flex-col gap-y-3">
+        <p>Invalid OAuth token</p>
+        <h3 class="text-2xl">How to get an OAuth token</h3>
+        <div class="flex flex-col gap-y-1">
+          <p>Go to mod.io -> My account -> Access</p>
+          <button
           on:click={() => open("https://mod.io/me/access")}
           class="bg-primary text-primary-foreground rounded-md p-1.5 justify-self-center mb-6 gap-1 flex items-center justify-center"
           role="link"
           tabindex="0"
-        >
+          >
           <ExternalLink />
           https://mod.io/me/access</button
-        >
-        <div class="flex">
+          >
+          <div class="flex">
           <p>1. Give the client a name, e.g.</p>
           <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1 flex items-center"
+          class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1 flex items-center"
           >
-            Pavlov Map Downloader
-          </p>
-          <p>, and click create.</p>
-        </div>
-        <div class="flex">
-          <p>2. Give the token a name, e.g.</p>
-          <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1"
-          >
-            Token
-          </p>
-          <p>, and select</p>
-          <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md mx-1 px-1"
-          >
-            Read + Write
-          </p>
-          <p>in the dropdown menu.</p>
-        </div>
-        <p>3. Copy the token, then paste it here and click confirm.</p>
+          Pavlov Map Downloader
+        </p>
+        <p>, and click create.</p>
       </div>
-      <div class="flex flex-col gap-y-1.5 justify-self-center items-start mt-5">
-        <Label>Mod.io OAuth token</Label>
-        <div class="flex flex-row gap-1">
-          <Input
-            placeholder={oauthToken == null ? "Token" : oauthToken}
-            bind:value={newOauthToken}
-          ></Input>
-          <AlertDialog>
-            <AlertDialogTrigger asChild let:builder>
-              <Button builders={[builder]} variant="outline">Confirm</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently remove the
-                  old OAuth token from the application. If you dont have it
-                  written down, then it will be lost forever.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  on:click={() => changeOauthToken(newOauthToken)}
-                  >Confirm</AlertDialogAction
-                >
-              </AlertDialogFooter>
+      <div class="flex">
+        <p>2. Give the token a name, e.g.</p>
+        <p
+        class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1"
+        >
+        Token
+      </p>
+      <p>, and select</p>
+      <p
+      class="bg-primary shadow-lg text-primary-foreground rounded-md mx-1 px-1"
+      >
+      Read + Write
+    </p>
+    <p>in the dropdown menu.</p>
+  </div>
+  <p>3. Copy the token, then paste it here and click confirm.</p>
+</div>
+<div class="flex flex-col gap-y-1.5 justify-self-center items-start mt-5">
+  <Label>Mod.io OAuth token</Label>
+  <div class="flex flex-row gap-1">
+    <Input
+    placeholder={oauthToken == null ? "Token" : oauthToken}
+    bind:value={newOauthToken}
+    ></Input>
+    <AlertDialog>
+      <AlertDialogTrigger asChild let:builder>
+        <Button builders={[builder]} variant="outline">Confirm</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently remove the
+            old OAuth token from the application. If you dont have it
+            written down, then it will be lost forever.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+          on:click={() => changeOauthToken(newOauthToken)}
+          >Confirm</AlertDialogAction
+          >
+        </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
       </div>
       <img
-        src="infographic.png"
-        alt="How to get a OAuth token"
-        class="rounded-md max-w-[1920px] w-[70%]"
+      src="infographic.png"
+      alt="How to get a OAuth token"
+      class="rounded-md max-w-[1920px] w-[70%]"
       />
     </div>
-  {/if}
-</div>
+    {/if}
+  </div>
+  <div class="w-full h-full bg-red-500" />
