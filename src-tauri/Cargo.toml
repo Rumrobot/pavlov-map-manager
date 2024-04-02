@@ -1,7 +1,7 @@
 [package]
 name = "pavlov-map-manager"
 version = "0.0.0"
-description = "A Tauri App"
+description = "Pavlov Map Manager"
 authors = ["you"]
 edition = "2021"
 

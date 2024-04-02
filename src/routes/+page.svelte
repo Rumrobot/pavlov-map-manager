@@ -585,6 +585,7 @@
                   <TooltipTrigger>
                     <Button
                       disabled={allUpdated}
+                      class={allSubscribed ? "cursor-not-allowed" : ""}
                       on:click={() => {
                         for (const map of Object.keys(mapData)) {
                           if (mapData[map].newUpdate) {
@@ -606,6 +607,7 @@
                   <TooltipTrigger>
                     <Button
                       disabled={allSubscribed}
+                      class={allSubscribed ? "cursor-not-allowed" : "cursor-not-allowed"}
                       on:click={() => {
                         for (const map of Object.keys(mapData)) {
                           if (!mapData[map].subscribed) {
@@ -613,7 +615,9 @@
                           }
                         }
                       }}
-                      ><Star fill={allSubscribed ? "bg-primary" : "none"} />
+                      ><Star
+                        fill={allSubscribed ? "bg-primary-foreground" : "none"}
+                      />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -668,9 +672,7 @@
                         {#if mapData[map].newUpdate}
                           <Button
                             on:click={() => addDownloadQueue([map])}
-                            class={!mapData[map].newUpdate
-                              ? "cursor-not-allowed hover:bg-primary"
-                              : ""}
+                            class={!mapData[map].newUpdate ? "disabled" : ""}
                           >
                             <ArrowDownToLine />
                           </Button>
@@ -686,7 +688,7 @@
                         {/if}
                         <AlertDialog>
                           <AlertDialogTrigger asChild let:builder>
-                            <Button builders={[builder]} class="bg-red-500">
+                            <Button builders={[builder]} class="bg-destructive">
                               <Trash />
                             </Button>
                           </AlertDialogTrigger>
@@ -745,7 +747,7 @@
                       <div class="mt-1.5 flex flex-row justify-between">
                         {#if mapData[map].subscribed}
                           <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="bg-primary" />
+                            <Star fill="bg-primary-foreground" />
                           </Button>
                         {:else}
                           <Button on:click={() => subscribe(map)}>
@@ -754,7 +756,7 @@
                         {/if}
                         <AlertDialog>
                           <AlertDialogTrigger asChild let:builder>
-                            <Button builders={[builder]} class="bg-red-500">
+                            <Button builders={[builder]} class="bg-destructive">
                               <Trash />
                             </Button>
                           </AlertDialogTrigger>
