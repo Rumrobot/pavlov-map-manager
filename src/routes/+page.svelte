@@ -97,11 +97,10 @@
   let receivedSize: number = 0;
   let totalSize: number = 0;
   let downloadProgress = 0;
-  let queueProgress: number = 0;
   let downloadStatus: string;
   let queue: Array<string> = [];
   let initialQueueLength: number = 0;
-  let queueDownloaded: number = 0;
+  let queueDownloading: number = 1;
 
   async function getMaps() {
     const path = await config.get("mods_path");
@@ -387,13 +386,11 @@
     checkAll();
 
     if (queue.length > 0) {
-      queueDownloaded++;
-      queueProgress = (queueDownloaded / initialQueueLength) * 100;
+      queueDownloading++;
       downloadQueue();
       return;
     } else {
-      queueProgress = 0;
-      queueDownloaded = 0;
+      queueDownloading = 1;
       initialQueueLength = 0;
       downloading = false;
       return;
@@ -549,19 +546,6 @@
         <div class="flex flex-col w-full max-w-6xl gap-y-5">
           <div class="flex items-center flex-col gap-y-1.5">
             {#if downloading}
-              {#if initialQueueLength > 1}
-                <h3 class="items-center text-xl">
-                  Downloading: {currentlyDownloading}
-                </h3>
-                <ProgressBar
-                  class="w-full"
-                  value={queueProgress}
-                  indeterminate
-                />
-                <div class="flex items-center w-full justify-self-start">
-                  {queueDownloaded}/{initialQueueLength}
-                </div>
-              {/if}
               <ProgressBar
                 class="w-full"
                 value={downloadProgress}
@@ -574,15 +558,30 @@
                 ? 'justify-between grid-cols-3'
                 : 'justify-end flex flex-row'}"
             >
-              <div class="items-center flex {downloading ? '' : 'hidden'}">
-                {humanFileSize(receivedSize)}/{humanFileSize(totalSize)}
+              <div
+                class="items-center flex gap-4 {downloading ? '' : 'hidden'}"
+              >
+                {#if initialQueueLength > 1}
+                  <span>{queueDownloading}/{initialQueueLength}</span>
+                {/if}
+                <span
+                  >{humanFileSize(receivedSize)}/{humanFileSize(
+                    totalSize
+                  )}</span
+                >
               </div>
               <div
                 class="items-center justify-self-center flex {downloading
                   ? ''
                   : 'hidden'}"
               >
-                {downloadStatus}
+                {#if downloadStatus == "Downloading"}
+                  Downloading {currentlyDownloading}
+                {:else if downloadStatus == "Extracting the file"}
+                  Extracting {currentlyDownloading}
+                {:else}
+                  {downloadStatus}
+                {/if}
               </div>
               <div class="flex items-center gap-1.5 justify-self-end">
                 <Tooltip>
