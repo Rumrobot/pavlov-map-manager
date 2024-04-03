@@ -339,7 +339,6 @@
         `${map}.zip`,
         (progress, total) => {
           receivedSize += progress;
-          console.log((receivedSize / totalSize) * 100);
           downloadProgress = (receivedSize / totalSize) * 100;
         },
         headers
