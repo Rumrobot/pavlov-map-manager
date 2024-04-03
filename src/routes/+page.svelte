@@ -340,8 +340,7 @@
         `${map}.zip`,
         (progress, total) => {
           receivedSize += progress;
-          totalSize = total;
-          downloadProgress = (receivedSize / total) * 100;
+          downloadProgress = (receivedSize / totalSize) * 100;
         },
         headers
       );
