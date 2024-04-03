@@ -20,7 +20,6 @@
   import { open } from "@tauri-apps/api/shell";
   import {
     ArrowDownToLine,
-    RefreshCcw,
     Star,
     Trash,
     LoaderCircle,
@@ -41,7 +40,6 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
-  import { get } from "svelte/store";
 
   const config = new Store(".config.dat");
   const limiter = new Bottleneck({
@@ -85,8 +83,10 @@
   let newOauthToken: string;
   let oauthToken: string;
   let modsPath: string;
-  $: allSubscribed = false;
-  $: allUpdated = false;
+  let allSubscribed: boolean;
+  let allUpdated: boolean;
+  let deletePopup: boolean;
+  let theme: string;
 
   let loading: boolean = true;
   let status: string;
@@ -400,19 +400,15 @@
     }
   }
 
-  async function addDownloadQueue(maps: Array<string>) {
-    let i: number = 0;
-    for (const map of maps) {
-      if (mapData[map].newUpdate && !queue.includes(map.toString())) {
-        queue.push(map);
-        queue = queue;
-        i++;
+  async function addDownloadQueue(map: string) {
+    if (mapData[map].newUpdate && !queue.includes(map.toString())) {
+      queue.push(map);
+      queue = queue;
+      if (initialQueueLength == 0) {
+        downloadQueue();
       }
+      initialQueueLength++;
     }
-    if (initialQueueLength == 0) {
-      downloadQueue();
-    }
-    initialQueueLength = initialQueueLength + i;
 
     checkAll();
     return;
@@ -483,6 +479,10 @@
   }
 
   async function load() {
+    status = "Loading settings";
+    deletePopup = await config.get("delete_popup");
+    theme = await config.get("theme");
+
     status = "Checking OAuth token";
     validOauthToken = await testOauthToken();
     if (!validOauthToken) {
@@ -593,13 +593,7 @@
                       on:click={() => {
                         for (const map of Object.keys(mapData)) {
                           if (mapData[map].newUpdate) {
-                            addDownloadQueue([map]);
-                            console.log(
-                              "Added to queue: " +
-                                map +
-                                "updated: " +
-                                mapData[map].newUpdate
-                            );
+                            addDownloadQueue(map);
                           }
                         }
                       }}><ArrowDownToLine /></Button
@@ -625,7 +619,11 @@
                         }
                       }}
                       ><Star
-                        fill={allSubscribed ? "bg-primary-foreground" : "none"}
+                        fill={allSubscribed
+                          ? theme == "dark"
+                            ? "#18181b"
+                            : "#f5f5f7"
+                          : "none"}
                       />
                     </Button>
                   </TooltipTrigger>
@@ -672,51 +670,68 @@
                       </button>
                       <div class="mt-1.5 flex flex-row justify-between">
                         <Button
-                          on:click={() => addDownloadQueue([map])}
+                          on:click={() => addDownloadQueue(map)}
                           disabled={queue.includes(map.toString())}
                         >
                           <ArrowDownToLine />
                         </Button>
-                        {#if mapData[map].subscribed}
-                          <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="urmum" />
-                          </Button>
-                        {:else}
-                          <Button on:click={() => subscribe(map)}>
-                            <Star />
-                          </Button>
-                        {/if}
+                        <Button
+                          on:click={() => {
+                            if (mapData[map].subscribed) {
+                              unsubscribe(map);
+                            } else {
+                              subscribe(map);
+                            }
+                          }}
+                        >
+                          <Star
+                            fill={mapData[map].subscribed
+                              ? theme == "dark"
+                                ? "#18181b"
+                                : "#f5f5f7"
+                              : "none"}
+                          />
+                        </Button>
                         {#if mapData[map].installedLocally}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild let:builder>
-                              <Button
-                                builders={[builder]}
-                                variant="destructive"
-                              >
-                                <Trash />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle
-                                  >Are you absolutely sure?</AlertDialogTitle
+                          {#if !deletePopup}
+                            <Button
+                              variant="destructive"
+                              on:click={() => deleteMod(map)}
+                            >
+                              <Trash />
+                            </Button>
+                          {:else}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild let:builder>
+                                <Button
+                                  builders={[builder]}
+                                  variant="destructive"
                                 >
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete the map: {mapData[map]
-                                    .title}. You can get it back by downloading
-                                  it again.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  on:click={() => deleteMod(map)}
-                                  >Confirm</AlertDialogAction
-                                >
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle
+                                    >Are you absolutely sure?</AlertDialogTitle
+                                  >
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will
+                                    permanently delete the map: {mapData[map]
+                                      .title}. You can get it back by
+                                    downloading it again.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    on:click={() => deleteMod(map)}
+                                    >Confirm</AlertDialogAction
+                                  >
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          {/if}
                         {/if}
                       </div>
                     </CardContent>
@@ -751,41 +766,62 @@
                         />
                       </button>
                       <div class="mt-1.5 flex flex-row justify-between">
-                        {#if mapData[map].subscribed}
-                          <Button on:click={() => unsubscribe(map)}>
-                            <Star fill="bg-primary-foreground" />
+                        <Button
+                          on:click={() => {
+                            if (mapData[map].subscribed) {
+                              unsubscribe(map);
+                            } else {
+                              subscribe(map);
+                            }
+                          }}
+                        >
+                          <Star
+                            fill={mapData[map].subscribed
+                              ? theme == "dark"
+                                ? "#18181b"
+                                : "#f5f5f7"
+                              : "none"}
+                          />
+                        </Button>
+                        {#if !deletePopup}
+                          <Button
+                            variant="destructive"
+                            on:click={() => deleteMod(map)}
+                          >
+                            <Trash />
                           </Button>
                         {:else}
-                          <Button on:click={() => subscribe(map)}>
-                            <Star fill="none" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild let:builder>
+                              <Button
+                                builders={[builder]}
+                                variant="destructive"
+                              >
+                                <Trash />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle
+                                  >Are you absolutely sure?</AlertDialogTitle
+                                >
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete the map: {mapData[map]
+                                    .title}. You can get it back by downloading
+                                  it again.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  on:click={() => deleteMod(map)}
+                                  >Confirm</AlertDialogAction
+                                >
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         {/if}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild let:builder>
-                            <Button builders={[builder]} variant="destructive">
-                              <Trash />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle
-                                >Are you absolutely sure?</AlertDialogTitle
-                              >
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete the map: {mapData[map]
-                                  .title}. You can get it back by downloading it
-                                again.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction on:click={() => deleteMod(map)}
-                                >Confirm</AlertDialogAction
-                              >
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>

@@ -2,8 +2,7 @@
   import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
   import {
-    ArrowLeft,
-    ArrowRight,
+    Home,
     Layers2,
     Maximize,
     Menu,
@@ -43,6 +42,7 @@
   let mods_path: string;
   let oauth_token: string;
   let avatar_url: string;
+  let delete_popup: boolean;
 
   onMount(async () => {
     scrollbar = OverlayScrollbars(contentEl, {
@@ -58,6 +58,7 @@
     mods_path = await config.get("mods_path");
     oauth_token = await config.get("oauth_token");
     avatar_url = await config.get("avatar_url");
+    delete_popup = await config.get("delete_popup");
 
     if (theme == null) {
       await config.set("theme", "dark");
@@ -77,6 +78,12 @@
       setAvatarUrl(oauth_token);
       await config.set("avatar_url", avatar_url);
     }
+
+    if (delete_popup == null) {
+      await config.set("delete_popup", false);
+    }
+
+    await config.save();
   });
 
   const resize = async () => (fullscreen = await appWindow.isMaximized());
@@ -89,13 +96,8 @@
   class="sticky h-[42px] top-0 z-40 w-full border-b border-border bg-background/60 shadow-sm backdrop-blur justify-between flex flex-row"
 >
   <div class="flex justify-start items-center py-1 px-2 gap-1">
-    <Button on:click={() => history.back()} variant="ghost" size="icon">
-      <!-- TODO: Use navigation.canGoBack -->
-      <ArrowLeft class="w-6 h-6" />
-    </Button>
-    <Button on:click={() => history.forward()} variant="ghost" size="icon">
-      <!-- TODO: Use navigation.canGoForward -->
-      <ArrowRight class="w-6 h-6" />
+    <Button href="/" variant="ghost" size="icon">
+      <Home />
     </Button>
     <Button on:click={() => location.reload()} variant="ghost" size="icon">
       <RotateCw class="w-6 h-6" />
@@ -121,7 +123,7 @@
           ><Settings class="w-6 h-6" /> Settings</a
         >
         <a
-          href="https://mod.io"
+          href="https://mod.io/g/pavlov"
           target="_blank"
           class="flex items-center gap-1 text-foreground/70 hover:bg-muted hover:text-foreground px-4 py-2 text-sm rounded-md"
           ><img src="/mod-io-icon.png" class="rounded-full w-6 h-6" /> Mod.io</a

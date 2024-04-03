@@ -21,6 +21,8 @@
     TooltipContent,
     TooltipTrigger,
   } from "$components/ui/tooltip";
+  import { Switch } from "$components/ui/switch";
+  import { onMount } from "svelte";
 
   const config = new Store(".config.dat");
   let new_oauth_token: string;
@@ -28,12 +30,14 @@
   let oauth_token: string;
   let mods_path: string;
   let theme: string;
+  let delete_popup: boolean;
 
-  (async () => {
+  onMount(async () => {
     theme = (await config.get("theme")) as string;
     oauth_token = await config.get("oauth_token");
     mods_path = await config.get("mods_path");
-  })();
+    delete_popup = await config.get("delete_popup");
+  });
 
   async function setTheme(new_theme: string) {
     setMode(new_theme as "dark" | "light" | "system");
@@ -53,28 +57,32 @@
     await config.save();
   }
 
-    async function change_mods_path(input: string) {
+  async function change_mods_path(input: string) {
     await config.set("mods_path", input);
     mods_path = input;
     await config.save();
   }
+
+  const delete_popup_switch = async () => {
+    await config.get("delete_popup");
+    await config.set("delete_popup", delete_popup);
+    await config.save();
+  };
 </script>
 
 <div class="page-container flex flex-col justify-center items-center m-5">
   <div class="flex flex-col gap-y-5">
+    <div class="gap-3 items-center flex">
+      <Switch bind:checked={delete_popup} on:click={delete_popup_switch} />
+      <Label>Confirm popup on map deletion</Label>
+    </div>
     <div class="flex flex-col gap-y-1.5 justify-start items-start">
       <Label>Theme</Label>
       <div class="flex flex-row gap-x-2">
-        <Button
-          disabled={theme === "dark"}
-          on:click={() => setTheme("dark")}
-        >
+        <Button disabled={theme === "dark"} on:click={() => setTheme("dark")}>
           Dark
         </Button>
-        <Button
-          disabled={theme === "light"}
-          on:click={() => setTheme("light")}
-        >
+        <Button disabled={theme === "light"} on:click={() => setTheme("light")}>
           Light
         </Button>
       </div>
