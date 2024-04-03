@@ -415,10 +415,6 @@
   }
 
   async function deleteMod(map: string) {
-    if (mapData[map].subscribed) {
-      await unsubscribe(map);
-    }
-
     maps = maps.filter((m) => m != map);
     mapData = Object.fromEntries(
       Object.entries(mapData).filter(([key, value]) => key != map)
@@ -539,22 +535,22 @@
   })();
 </script>
 
-<div class="flex justify-center items-center m-5">
+<div class="flex items-center justify-center m-5">
   {#if validOauthToken}
     {#if maps.length > 0}
       {#if loading}
         <div
-          class="flex flex-col gap-y-5 w-full max-w-6xl justify-center items-center"
+          class="flex flex-col items-center justify-center w-full max-w-6xl gap-y-5"
         >
           <LoaderCircle size="50" class="animate-spin" />
           {status}
         </div>
       {:else}
-        <div class="flex flex-col gap-y-5 w-full max-w-6xl">
+        <div class="flex flex-col w-full max-w-6xl gap-y-5">
           <div class="flex items-center flex-col gap-y-1.5">
             {#if downloading}
               {#if initialQueueLength > 1}
-                <h3 class="text-xl items-center">
+                <h3 class="items-center text-xl">
                   Downloading: {currentlyDownloading}
                 </h3>
                 <ProgressBar
@@ -562,7 +558,7 @@
                   value={queueProgress}
                   indeterminate
                 />
-                <div class="items-center flex justify-self-start w-full">
+                <div class="flex items-center w-full justify-self-start">
                   {queueDownloaded}/{initialQueueLength}
                 </div>
               {/if}
@@ -649,11 +645,11 @@
           >
             <h2 class="text-xl">New update available</h2>
             <div
-              class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             >
               {#each Object.keys(mapData) as map}
                 {#if mapData[map].newUpdate}
-                  <Card class="m-1 items-center text-center">
+                  <Card class="items-center m-1 text-center">
                     <CardHeader>
                       <CardTitle class="text-2xl truncate overflow-ellipsis"
                         >{mapData[map].title}</CardTitle
@@ -743,14 +739,14 @@
               {/each}
             </div>
           </div>
-          <div class="flex flex-col justify-start items-start">
+          <div class="flex flex-col items-start justify-start">
             <h2 class="text-xl">Up to date</h2>
             <div
-              class="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             >
               {#each Object.keys(mapData) as map}
                 {#if mapData[map].newUpdate != true}
-                  <Card class="m-1 items-center text-center">
+                  <Card class="items-center m-1 text-center">
                     <CardHeader>
                       <CardTitle class="text-2xl truncate overflow-ellipsis"
                         >{mapData[map].title}</CardTitle
@@ -835,7 +831,7 @@
         </div>
       {/if}
     {:else}
-      <div class="flex items-center justify-center flex-col">
+      <div class="flex flex-col items-center justify-center">
         <p>No maps found</p>
         <br />
         <p>Is the path correct?</p>
@@ -843,7 +839,7 @@
       </div>
     {/if}
   {:else}
-    <div class="flex items-center justify-center flex-col gap-y-3">
+    <div class="flex flex-col items-center justify-center gap-y-3">
       <p>Invalid OAuth token</p>
       <h3 class="text-2xl">How to get an OAuth token</h3>
       <div class="flex flex-col gap-y-1">
@@ -860,7 +856,7 @@
         <div class="flex">
           <p>1. Give the client a name, e.g.</p>
           <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1 flex items-center"
+            class="flex items-center px-1 ml-1 rounded-md shadow-lg bg-primary text-primary-foreground"
           >
             Pavlov Map Downloader
           </p>
@@ -869,13 +865,13 @@
         <div class="flex">
           <p>2. Give the token a name, e.g.</p>
           <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md ml-1 px-1"
+            class="px-1 ml-1 rounded-md shadow-lg bg-primary text-primary-foreground"
           >
             Token
           </p>
           <p>, and select</p>
           <p
-            class="bg-primary shadow-lg text-primary-foreground rounded-md mx-1 px-1"
+            class="px-1 mx-1 rounded-md shadow-lg bg-primary text-primary-foreground"
           >
             Read + Write
           </p>
