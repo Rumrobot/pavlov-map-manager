@@ -1,34 +1,4 @@
 <script lang="ts">
-  import { Button } from "$components/ui/button";
-  import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-  } from "$components/ui/card";
-  import { Progress } from "$components/ui/progress";
-  import {
-    Tooltip,
-    TooltipTrigger,
-    TooltipContent,
-  } from "$components/ui/tooltip";
-  import { Input } from "$components/ui/input/";
-  import { Label } from "$components/ui/label";
-  import { removeFile } from "@tauri-apps/api/fs";
-  import { humanFileSize, setAvatarUrl } from "$lib/utils";
-  import { invoke } from "@tauri-apps/api/tauri";
-  import { open } from "@tauri-apps/api/shell";
-  import {
-    ArrowDownToLine,
-    Star,
-    Trash,
-    LoaderCircle,
-    ExternalLink,
-  } from "lucide-svelte";
-  import { Store } from "tauri-plugin-store-api";
-  import Bottleneck from "bottleneck";
-  import { download } from "tauri-plugin-upload-api";
-  import { toast } from "svelte-sonner";
   import {
     AlertDialog,
     AlertDialogAction,
@@ -40,6 +10,36 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
+  import { Button } from "$components/ui/button";
+  import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+  } from "$components/ui/card";
+  import { Input } from "$components/ui/input/";
+  import { Label } from "$components/ui/label";
+  import { ProgressBar } from "$components/ui/progress-bar";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+  } from "$components/ui/tooltip";
+  import { humanFileSize, setAvatarUrl } from "$lib/utils";
+  import { removeFile } from "@tauri-apps/api/fs";
+  import { open } from "@tauri-apps/api/shell";
+  import { invoke } from "@tauri-apps/api/tauri";
+  import Bottleneck from "bottleneck";
+  import {
+    ArrowDownToLine,
+    ExternalLink,
+    LoaderCircle,
+    Star,
+    Trash,
+  } from "lucide-svelte";
+  import { toast } from "svelte-sonner";
+  import { Store } from "tauri-plugin-store-api";
+  import { download } from "tauri-plugin-upload-api";
 
   const config = new Store(".config.dat");
   const limiter = new Bottleneck({
@@ -96,7 +96,7 @@
   let currentlyDownloading: string;
   let receivedSize: number = 0;
   let totalSize: number = 0;
-  let downloadProgress: number = 0;
+  let downloadProgress = 0;
   let queueProgress: number = 0;
   let downloadStatus: string;
   let queue: Array<string> = [];
@@ -340,6 +340,7 @@
         `${map}.zip`,
         (progress, total) => {
           receivedSize += progress;
+          console.log((receivedSize / totalSize) * 100);
           downloadProgress = (receivedSize / totalSize) * 100;
         },
         headers
@@ -551,24 +552,27 @@
       {:else}
         <div class="flex flex-col gap-y-5 w-full max-w-6xl">
           <div class="flex items-center flex-col gap-y-1.5">
-            <h3 class="text-xl {downloading ? '' : 'hidden'} items-center">
-              Downloading: {currentlyDownloading}
-            </h3>
-            <Progress
-              value={queueProgress}
-              class="w-full {downloading ? '' : 'hidden'}"
-            />
-            <div
-              class="items-center flex justify-self-start w-full {downloading
-                ? ''
-                : 'hidden'}"
-            >
-              {queueDownloaded}/{initialQueueLength}
-            </div>
-            <Progress
-              value={downloadProgress}
-              class="w-full {downloading ? '' : 'hidden'}"
-            />
+            {#if downloading}
+              {#if initialQueueLength > 1}
+                <h3 class="text-xl items-center">
+                  Downloading: {currentlyDownloading}
+                </h3>
+                <ProgressBar
+                  class="w-full"
+                  value={queueProgress}
+                  indeterminate
+                />
+                <div class="items-center flex justify-self-start w-full">
+                  {queueDownloaded}/{initialQueueLength}
+                </div>
+              {/if}
+              <ProgressBar
+                class="w-full"
+                value={downloadProgress}
+                throttled
+                indeterminate={downloadStatus !== "Downloading"}
+              />
+            {/if}
             <div
               class="w-full grid {downloading
                 ? 'justify-between grid-cols-3'
