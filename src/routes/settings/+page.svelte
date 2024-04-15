@@ -23,12 +23,15 @@
   } from "$components/ui/tooltip";
   import { Switch } from "$components/ui/switch";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
+  import { getModsPath } from "$lib/utils";
 
   const config = new Store(".config.dat");
   let new_oauth_token: string;
   let new_mods_path: string;
   let oauth_token: string;
   let mods_path: string;
+  let auto_path: boolean;
   let theme: string;
   let delete_popup: boolean;
 
@@ -36,6 +39,7 @@
     theme = (await config.get("theme")) as string;
     oauth_token = await config.get("oauth_token");
     mods_path = await config.get("mods_path");
+    auto_path = await config.get("auto_path");
     delete_popup = await config.get("delete_popup");
   });
 
@@ -60,6 +64,16 @@
   async function change_mods_path(input: string) {
     await config.set("mods_path", input);
     mods_path = input;
+    await config.save();
+    toast.success("Mods path changed successfully");
+  }
+
+  async function toggle_auto_path() {
+    if (!auto_path) {
+      await change_mods_path(await getModsPath());
+    }
+    await config.get("auto_path");
+    await config.set("auto_path", auto_path);
     await config.save();
   }
 
@@ -118,9 +132,18 @@
         </AlertDialog>
       </div>
     </div>
-    <div class="flex flex-col gap-y-1.5 justify-start items-start">
+    <div class="flex flex-col gap-1.5 justify-start items-start">
       <Label>Path to mods folder</Label>
-      <div class="flex flex-row gap-x-1">
+      <div class="items-center flex gap-1.5">
+        <Switch
+        bind:checked={auto_path}
+        on:click={toggle_auto_path}
+        ></Switch>
+        <Label>
+          Auto path 
+        </Label>
+      </div>
+      <div class="flex flex-row gap-x-1 justify-center items-center">
         <Tooltip>
           <TooltipTrigger>
             <Input

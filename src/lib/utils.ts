@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
+import { invoke } from "@tauri-apps/api";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -19,22 +20,41 @@ export function humanFileSize(size) {
     return (Number((size / Math.pow(1024, i)).toFixed(2)) * 1) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
+export async function getModsPath() {
+    const userSettings: string = await invoke("read_file", {
+        filePath: "C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Config\\Windows\\GameUserSettings.ini",
+    });
+
+    for (const line of userSettings.split("\n")) {
+        if (line.includes("ModDirectory")) {
+            let path = line.split("=")[1];
+
+            if (path.length > 1) {
+                return path;
+            } else {
+                path = "C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Mods";
+                return path;
+            }
+        }
+    }
+}
+
 export async function setAvatarUrl(oauth_token: string) {
     try {
-      const response = await fetch("https://api.mod.io/v1/me", {
-        method: "GET",
-        headers: {
-          Authorization: "Bearer " + oauth_token,
-          Accept: "application/json",
-        },
-      });
-      const data = await response.json();
-      return data.avatar.thumb_100x100;
+        const response = await fetch("https://api.mod.io/v1/me", {
+            method: "GET",
+            headers: {
+                Authorization: "Bearer " + oauth_token,
+                Accept: "application/json",
+            },
+        });
+        const data = await response.json();
+        return data.avatar.thumb_100x100;
     } catch (error) {
-      console.error("Error:", error);
-      return;
+        console.error("Error:", error);
+        return;
     }
-  }
+}
 
 export const flyAndScale = (
     node: Element,

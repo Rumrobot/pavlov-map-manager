@@ -1,11 +1,10 @@
 # Todo
 
 - Clean up the code ofc.
-  - Use {#await} instead of {#if} in html
+- som error handling for invalid mod folders
 
 ## New features
 
-- Select button for maps
 - Cancel button for downloading
 
 ## QOL
