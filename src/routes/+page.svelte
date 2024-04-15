@@ -209,7 +209,7 @@
 
     while (!allRead) {
       const response = await modioRequest(
-        `https://api.mod.io/v1/me/subscribed?game_id=3959&tags=Map`,
+        `https://api.mod.io/v1/me/subscribed?game_id=3959&platforms=windows`,
         "GET"
       );
       if (!response.ok) {
@@ -533,253 +533,158 @@
 
 <div class="flex items-center justify-center m-5">
   {#if validOauthToken}
-    {#if maps.length > 0}
-      {#if loading}
-        <div
-          class="flex flex-col items-center justify-center w-full max-w-6xl gap-y-5"
-        >
-          <LoaderCircle size="50" class="animate-spin" />
-          {status}
-        </div>
-      {:else}
-        <div class="flex flex-col w-full max-w-6xl gap-y-5">
-          <div class="flex items-center flex-col gap-y-1.5">
-            {#if downloading}
-              <ProgressBar
-                class="w-full"
-                value={downloadProgress}
-                throttled
-                indeterminate={downloadStatus !== "Downloading"}
-              />
-            {/if}
+    {#if loading}
+      <div
+        class="flex flex-col items-center justify-center w-full max-w-6xl gap-y-5"
+      >
+        <LoaderCircle size="50" class="animate-spin" />
+        {status}
+      </div>
+    {:else if maps.length > 0 && mapData != null}
+      <div class="flex flex-col w-full max-w-6xl gap-y-5">
+        <div class="flex items-center flex-col gap-y-1.5">
+          {#if downloading}
+            <ProgressBar
+              class="w-full"
+              value={downloadProgress}
+              throttled
+              indeterminate={downloadStatus !== "Downloading"}
+            />
+          {/if}
+          <div
+            class="w-full grid {downloading
+              ? 'justify-between grid-cols-3'
+              : 'justify-end flex flex-row'}"
+          >
+            <div class="items-center flex gap-4 {downloading ? '' : 'hidden'}">
+              {#if initialQueueLength > 1}
+                <span>{queueDownloading}/{initialQueueLength}</span>
+              {/if}
+              <span
+                >{humanFileSize(receivedSize)}/{humanFileSize(totalSize)}</span
+              >
+            </div>
             <div
-              class="w-full grid {downloading
-                ? 'justify-between grid-cols-3'
-                : 'justify-end flex flex-row'}"
+              class="items-center justify-self-center flex {downloading
+                ? ''
+                : 'hidden'}"
             >
-              <div
-                class="items-center flex gap-4 {downloading ? '' : 'hidden'}"
-              >
-                {#if initialQueueLength > 1}
-                  <span>{queueDownloading}/{initialQueueLength}</span>
-                {/if}
-                <span
-                  >{humanFileSize(receivedSize)}/{humanFileSize(
-                    totalSize
-                  )}</span
-                >
-              </div>
-              <div
-                class="items-center justify-self-center flex {downloading
-                  ? ''
-                  : 'hidden'}"
-              >
-                {#if downloadStatus == "Downloading"}
-                  Downloading {currentlyDownloading}
-                {:else if downloadStatus == "Extracting the file"}
-                  Extracting {currentlyDownloading}
-                {:else}
-                  {downloadStatus}
-                {/if}
-              </div>
-              <div class="flex items-center gap-1.5 justify-self-end">
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Button
-                      disabled={allUpdated}
-                      on:click={() => {
-                        for (const map of Object.keys(mapData)) {
-                          if (mapData[map].newUpdate) {
-                            addDownloadQueue(map);
-                          }
+              {#if downloadStatus == "Downloading"}
+                Downloading {currentlyDownloading}
+              {:else if downloadStatus == "Extracting the file"}
+                Extracting {currentlyDownloading}
+              {:else}
+                {downloadStatus}
+              {/if}
+            </div>
+            <div class="flex items-center gap-1.5 justify-self-end">
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    disabled={allUpdated}
+                    on:click={() => {
+                      for (const map of Object.keys(mapData)) {
+                        if (mapData[map].newUpdate) {
+                          addDownloadQueue(map);
                         }
-                      }}><ArrowDownToLine /></Button
+                      }
+                    }}><ArrowDownToLine /></Button
+                  >
+                </TooltipTrigger>
+                <TooltipContent>
+                  {#if allUpdated}
+                    All maps are up to date
+                  {:else}
+                    Update all maps
+                  {/if}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    disabled={allSubscribed}
+                    on:click={() => {
+                      for (const map of Object.keys(mapData)) {
+                        if (!mapData[map].subscribed) {
+                          subscribe(map);
+                        }
+                      }
+                    }}
+                    ><Star
+                      fill={allSubscribed
+                        ? theme == "dark"
+                          ? "#18181b"
+                          : "#f5f5f7"
+                        : "none"}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {#if allSubscribed}
+                    You are already subscribed to all maps
+                  {:else}
+                    Subscribe to all maps
+                  {/if}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col justify-start items-start {allUpdated &&
+          queue.length == 0
+            ? 'hidden'
+            : ''}"
+        >
+          <h2 class="text-xl">New update available</h2>
+          <div
+            class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          >
+            {#each Object.keys(mapData) as map}
+              {#if mapData[map].newUpdate}
+                <Card class="items-center m-1 text-center">
+                  <CardHeader>
+                    <CardTitle class="text-2xl truncate overflow-ellipsis"
+                      >{mapData[map].title}</CardTitle
                     >
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {#if allUpdated}
-                      All maps are up to date
-                    {:else}
-                      Update all maps
-                    {/if}
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Button
-                      disabled={allSubscribed}
-                      on:click={() => {
-                        for (const map of Object.keys(mapData)) {
-                          if (!mapData[map].subscribed) {
+                  </CardHeader>
+                  <CardContent>
+                    <button
+                      on:click={() => open(mapData[map].modUrl)}
+                      role="link"
+                      tabindex="0"
+                    >
+                      <img
+                        src={mapData[map].imageUrl}
+                        alt={mapData[map].title}
+                        class="rounded-md"
+                      />
+                    </button>
+                    <div class="mt-1.5 flex flex-row justify-between">
+                      <Button
+                        on:click={() => addDownloadQueue(map)}
+                        disabled={queue.includes(map.toString())}
+                      >
+                        <ArrowDownToLine />
+                      </Button>
+                      <Button
+                        on:click={() => {
+                          if (mapData[map].subscribed) {
+                            unsubscribe(map);
+                          } else {
                             subscribe(map);
                           }
-                        }
-                      }}
-                      ><Star
-                        fill={allSubscribed
-                          ? theme == "dark"
-                            ? "#18181b"
-                            : "#f5f5f7"
-                          : "none"}
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {#if allSubscribed}
-                      You are already subscribed to all maps
-                    {:else}
-                      Subscribe to all maps
-                    {/if}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-          <div
-            class="flex flex-col justify-start items-start {allUpdated &&
-            queue.length == 0
-              ? 'hidden'
-              : ''}"
-          >
-            <h2 class="text-xl">New update available</h2>
-            <div
-              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-            >
-              {#each Object.keys(mapData) as map}
-                {#if mapData[map].newUpdate}
-                  <Card class="items-center m-1 text-center">
-                    <CardHeader>
-                      <CardTitle class="text-2xl truncate overflow-ellipsis"
-                        >{mapData[map].title}</CardTitle
+                        }}
                       >
-                    </CardHeader>
-                    <CardContent>
-                      <button
-                        on:click={() => open(mapData[map].modUrl)}
-                        role="link"
-                        tabindex="0"
-                      >
-                        <img
-                          src={mapData[map].imageUrl}
-                          alt={mapData[map].title}
-                          class="rounded-md"
+                        <Star
+                          fill={mapData[map].subscribed
+                            ? theme == "dark"
+                              ? "#18181b"
+                              : "#f5f5f7"
+                            : "none"}
                         />
-                      </button>
-                      <div class="mt-1.5 flex flex-row justify-between">
-                        <Button
-                          on:click={() => addDownloadQueue(map)}
-                          disabled={queue.includes(map.toString())}
-                        >
-                          <ArrowDownToLine />
-                        </Button>
-                        <Button
-                          on:click={() => {
-                            if (mapData[map].subscribed) {
-                              unsubscribe(map);
-                            } else {
-                              subscribe(map);
-                            }
-                          }}
-                        >
-                          <Star
-                            fill={mapData[map].subscribed
-                              ? theme == "dark"
-                                ? "#18181b"
-                                : "#f5f5f7"
-                              : "none"}
-                          />
-                        </Button>
-                        {#if mapData[map].installedLocally}
-                          {#if !deletePopup}
-                            <Button
-                              variant="destructive"
-                              on:click={() => deleteMod(map)}
-                            >
-                              <Trash />
-                            </Button>
-                          {:else}
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild let:builder>
-                                <Button
-                                  builders={[builder]}
-                                  variant="destructive"
-                                >
-                                  <Trash />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle
-                                    >Are you absolutely sure?</AlertDialogTitle
-                                  >
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will
-                                    permanently delete the map: {mapData[map]
-                                      .title}. You can get it back by
-                                    downloading it again.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    on:click={() => deleteMod(map)}
-                                    >Confirm</AlertDialogAction
-                                  >
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          {/if}
-                        {/if}
-                      </div>
-                    </CardContent>
-                  </Card>
-                {/if}
-              {/each}
-            </div>
-          </div>
-          <div class="flex flex-col items-start justify-start">
-            <h2 class="text-xl">Up to date</h2>
-            <div
-              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-            >
-              {#each Object.keys(mapData) as map}
-                {#if mapData[map].newUpdate != true}
-                  <Card class="items-center m-1 text-center">
-                    <CardHeader>
-                      <CardTitle class="text-2xl truncate overflow-ellipsis"
-                        >{mapData[map].title}</CardTitle
-                      >
-                    </CardHeader>
-                    <CardContent>
-                      <button
-                        on:click={() => open(mapData[map].modUrl)}
-                        role="link"
-                        tabindex="0"
-                      >
-                        <img
-                          src={mapData[map].imageUrl}
-                          alt={mapData[map].title}
-                          class="rounded-md"
-                        />
-                      </button>
-                      <div class="mt-1.5 flex flex-row justify-between">
-                        <Button
-                          on:click={() => {
-                            if (mapData[map].subscribed) {
-                              unsubscribe(map);
-                            } else {
-                              subscribe(map);
-                            }
-                          }}
-                        >
-                          <Star
-                            fill={mapData[map].subscribed
-                              ? theme == "dark"
-                                ? "#18181b"
-                                : "#f5f5f7"
-                              : "none"}
-                          />
-                        </Button>
+                      </Button>
+                      {#if mapData[map].installedLocally}
                         {#if !deletePopup}
                           <Button
                             variant="destructive"
@@ -819,21 +724,103 @@
                             </AlertDialogContent>
                           </AlertDialog>
                         {/if}
-                      </div>
-                    </CardContent>
-                  </Card>
-                {/if}
-              {/each}
-            </div>
+                      {/if}
+                    </div>
+                  </CardContent>
+                </Card>
+              {/if}
+            {/each}
           </div>
         </div>
-      {/if}
+        <div class="flex flex-col items-start justify-start">
+          <h2 class="text-xl">Up to date</h2>
+          <div
+            class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          >
+            {#each Object.keys(mapData) as map}
+              {#if mapData[map].newUpdate != true}
+                <Card class="items-center m-1 text-center">
+                  <CardHeader>
+                    <CardTitle class="text-2xl truncate overflow-ellipsis"
+                      >{mapData[map].title}</CardTitle
+                    >
+                  </CardHeader>
+                  <CardContent>
+                    <button
+                      on:click={() => open(mapData[map].modUrl)}
+                      role="link"
+                      tabindex="0"
+                    >
+                      <img
+                        src={mapData[map].imageUrl}
+                        alt={mapData[map].title}
+                        class="rounded-md"
+                      />
+                    </button>
+                    <div class="mt-1.5 flex flex-row justify-between">
+                      <Button
+                        on:click={() => {
+                          if (mapData[map].subscribed) {
+                            unsubscribe(map);
+                          } else {
+                            subscribe(map);
+                          }
+                        }}
+                      >
+                        <Star
+                          fill={mapData[map].subscribed
+                            ? theme == "dark"
+                              ? "#18181b"
+                              : "#f5f5f7"
+                            : "none"}
+                        />
+                      </Button>
+                      {#if !deletePopup}
+                        <Button
+                          variant="destructive"
+                          on:click={() => deleteMod(map)}
+                        >
+                          <Trash />
+                        </Button>
+                      {:else}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild let:builder>
+                            <Button builders={[builder]} variant="destructive">
+                              <Trash />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle
+                                >Are you absolutely sure?</AlertDialogTitle
+                              >
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the map: {mapData[map]
+                                  .title}. You can get it back by downloading it
+                                again.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction on:click={() => deleteMod(map)}
+                                >Confirm</AlertDialogAction
+                              >
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      {/if}
+                    </div>
+                  </CardContent>
+                </Card>
+              {/if}
+            {/each}
+          </div>
+        </div>
+      </div>
     {:else}
       <div class="flex flex-col items-center justify-center">
         <p>No maps found</p>
-        <br />
-        <p>Is the path correct?</p>
-        <p class="bg-secondary rounded px-1.5 w-fit">{modsPath}</p>
       </div>
     {/if}
   {:else}
