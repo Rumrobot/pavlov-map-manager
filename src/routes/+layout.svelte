@@ -20,12 +20,11 @@
     PopoverTrigger,
   } from "$components/ui/popover";
   import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
-  import { setAvatarUrl } from "$lib/utils";
   import { Toaster } from "$components/ui/sonner";
   import { onMount } from "svelte";
   import { appWindow } from "@tauri-apps/api/window";
   import { OverlayScrollbars } from "overlayscrollbars";
-  import { getModsPath } from "$lib/utils";
+  import { getModsPath } from "$lib/modio-utils";
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -56,13 +55,9 @@
       },
     });
     fullscreen = await appWindow.isMaximized();
-    theme = await config.get("theme");
-    mods_path = await config.get("mods_path");
-    oauth_token = await config.get("oauth_token");
-    auto_path = await config.get("auto_path");
-    avatar_url = await config.get("avatar_url");
-    delete_popup = await config.get("delete_popup");
 
+    // Initialize settings, if they dont exist
+    const theme = await config.get("theme");
     if (theme == null) {
       await config.set("theme", "dark");
       setMode("dark");
@@ -70,20 +65,15 @@
       setMode(theme as "dark" | "light");
     }
 
-    if (mods_path == null) {
+    if (await config.get("mods_path") == null) {
       getModsPath();
     }
 
-    if (avatar_url == null) {
-      setAvatarUrl(oauth_token);
-      await config.set("avatar_url", avatar_url);
-    }
-
-    if (delete_popup == null) {
+    if (await config.get("delete_popup") == null) {
       await config.set("delete_popup", false);
     }
 
-    if (auto_path == null) {
+    if (await config.get("auto_path") == null) {
       await config.set("auto_path", true);
     }
 
@@ -130,7 +120,11 @@
           href="https://mod.io/g/pavlov"
           target="_blank"
           class="flex items-center gap-1 text-foreground/70 hover:bg-muted hover:text-foreground px-4 py-2 text-sm rounded-md"
-          ><img src="/mod-io-icon.png" alt="Mod.io" class="rounded-full w-6 h-6" /> Mod.io</a
+          ><img
+            src="/mod-io-icon.png"
+            alt="Mod.io"
+            class="rounded-full w-6 h-6"
+          /> Mod.io</a
         >
       </PopoverContent>
     </Popover>

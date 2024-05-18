@@ -15,7 +15,7 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
-  import { setAvatarUrl } from "$lib/utils";
+  import { changeOauthToken } from "$lib/modio-utils";
   import {
     Tooltip,
     TooltipContent,
@@ -24,7 +24,7 @@
   import { Switch } from "$components/ui/switch";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
-  import { getModsPath } from "$lib/utils";
+  import { getModsPath } from "$lib/modio-utils";
 
   const config = new Store(".config.dat");
   let new_oauth_token: string;
@@ -49,16 +49,6 @@
 
     config.save();
     theme = new_theme;
-  }
-
-  async function change_oauth_token(input: string) {
-    const new_avatar_url = await setAvatarUrl(input);
-    oauth_token = input;
-
-    await config.set("oauth_token", input);
-    await config.set("avatar_url", new_avatar_url);
-
-    await config.save();
   }
 
   async function change_mods_path(input: string) {
@@ -124,7 +114,7 @@
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                on:click={() => change_oauth_token(new_oauth_token)}
+                on:click={() => changeOauthToken(new_oauth_token)}
                 >Confirm</AlertDialogAction
               >
             </AlertDialogFooter>

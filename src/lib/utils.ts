@@ -20,42 +20,6 @@ export function humanFileSize(size) {
     return (Number((size / Math.pow(1024, i)).toFixed(2)) * 1) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
-export async function getModsPath() {
-    const userSettings: string = await invoke("read_file", {
-        filePath: "C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Config\\Windows\\GameUserSettings.ini",
-    });
-
-    for (const line of userSettings.split("\n")) {
-        if (line.includes("ModDirectory")) {
-            let path = line.split("=")[1];
-
-            if (path.length > 1) {
-                return path;
-            } else {
-                path = "C:\\Users\\%user%\\AppData\\Local\\Pavlov\\Saved\\Mods";
-                return path;
-            }
-        }
-    }
-}
-
-export async function setAvatarUrl(oauth_token: string) {
-    try {
-        const response = await fetch("https://api.mod.io/v1/me", {
-            method: "GET",
-            headers: {
-                Authorization: "Bearer " + oauth_token,
-                Accept: "application/json",
-            },
-        });
-        const data = await response.json();
-        return data.avatar.thumb_100x100;
-    } catch (error) {
-        console.error("Error:", error);
-        return;
-    }
-}
-
 export const flyAndScale = (
     node: Element,
     params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
