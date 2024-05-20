@@ -2,6 +2,7 @@
 
 - Clean up the code ofc.
 - som error handling for invalid mod folders
+- check download hash
 
 ## New features
 

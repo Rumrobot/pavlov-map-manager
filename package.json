@@ -14,7 +14,7 @@
   "dependencies": {
     "@sveltejs/kit": "^2.5.4",
     "@tauri-apps/api": "^1",
-    "bits-ui": "^0.20.0",
+    "bits-ui": "^0.21.8",
     "bottleneck": "^2.19.5",
     "clsx": "^2.1.0",
     "lucide-svelte": "^0.359.0",

@@ -38,12 +38,8 @@
   const config = new Store(".config.dat");
   let fullscreen = false;
 
-  let theme: string;
-  let mods_path: string;
   let oauth_token: string;
-  let auto_path: boolean;
   let avatar_url: string;
-  let delete_popup: boolean;
 
   onMount(async () => {
     scrollbar = OverlayScrollbars(contentEl, {
@@ -65,16 +61,20 @@
       setMode(theme as "dark" | "light");
     }
 
-    if (await config.get("mods_path") == null) {
+    if ((await config.get("mods_path")) == null) {
       getModsPath();
     }
 
-    if (await config.get("delete_popup") == null) {
-      await config.set("delete_popup", false);
+    if ((await config.get("delete_popup")) == null) {
+      await config.set("delete_popup", true);
     }
 
-    if (await config.get("auto_path") == null) {
+    if ((await config.get("auto_path")) == null) {
       await config.set("auto_path", true);
+    }
+
+    if ((await config.get("show_type")) == null) {
+      await config.set("show_type", true);
     }
 
     await config.save();

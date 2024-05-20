@@ -33,6 +33,51 @@ export async function modioRequest(
     return response;
 }
 
+export async function loadMods() {
+    let mods = get(modsStore);
+    const app = get(appStore);
+
+    app.loading = true;
+    app.status = "Loading mods";
+    appStore.set(app);
+
+    const localMods = await getLocalMods();
+    const subscriptions = await getSubscriptions();
+
+    for (const modData of subscriptions) {
+        if (assignModData(modData)) {
+            mods = get(modsStore);
+            mods[modData.id].subscribed = true;
+        }
+    }
+
+    for (const mod of localMods) {
+        if (!Object.keys(mods).includes(mod)) {
+            const response = await modioRequest(
+                `/games/3959/mods/${mod}`,
+                "GET"
+            );
+            if (!response.ok) {
+                toast.error("Error while fetching map data for map: " + mod);
+                console.log("Error while fetching map data for map: ", mod, " Error: ", response.status);
+                continue;
+            }
+            const data = await response.json();
+
+            if (assignModData(data)) {
+                mods = get(modsStore);
+                mods[data.id].subscribed = true;
+            }
+        }
+        mods[mod].currentVersion = await getCurrentVersion(mod);
+    }
+
+    modsStore.set(mods);
+    app.loading = false;
+    app.status = "Done";
+    appStore.set(app);
+}
+
 async function downloadQueue() {
     let queue = get(queueStore);
     const app = get(appStore);
@@ -82,7 +127,6 @@ async function downloadMap(mod: string) {
     const modsPath = await config.get("mods_path");
     const oauthToken = await config.get("oauth_token");
 
-    console.log("Old version: ", mods[mod].currentVersion)
     // Set app data
     app.currentlyDownloading = mods[mod].title;
     app.downloadStatus = "Checking new mod version";
@@ -175,9 +219,6 @@ async function downloadMap(mod: string) {
     });
     mods[mod].currentVersion = await getCurrentVersion(mod);
 
-    console.log("New version written: ", mods[mod].currentVersion);
-    console.log(mods[mod]);
-
     app.downloadStatus = "Done";
 
     modsStore.set(mods);
@@ -198,59 +239,25 @@ async function getCurrentVersion(mod: string) {
         return undefined;
     }
 
-    return currentVersion;
+    return parseInt(currentVersion);
 }
 
-export async function getMaps() {
-    let mods = get(modsStore);
+async function getLocalMods() {
     const modsPath = await config.get("mods_path");
 
-    await getSubscriptions();
-
-    let localMods: Array<string> = [];
+    let localMods: Array<any> = [];
     try {
         localMods = await invoke("ls", { path: modsPath });
     } catch (error) {
         toast.error("Error while reading maps from path: " + modsPath);
         console.log("Error while reading maps from path: ", error);
     }
-    console.log(localMods);
 
     localMods = localMods.filter((map: string) => map.startsWith("UGC"));
     localMods = localMods.map((map: string) => map.split("UGC")[1]);
+    localMods = localMods.map((map: string) => parseInt(map));
 
-    console.log(localMods);
-
-    for (const mod of localMods) {
-        if (!Object.keys(mods).includes(mod)) {
-            const response = await modioRequest(
-                `/games/3959/mods/${mod}`,
-                "GET"
-            );
-            if (!response.ok) {
-                toast.error("Error while fetching map data for map: " + mod);
-                console.log("Error while fetching map data for map: ", mod, " Error: ", response.status);
-
-                // Remove the map from the list if it doesn't exist on mod.io
-                mods = Object.fromEntries(
-                    Object.entries(mods).filter(([key]) => key != mod)
-                );
-                continue;
-            }
-            const data = await response.json();
-            assignModData(data);
-            mods[data.id].subscribed = false;
-        }
-
-        mods[mod].currentVersion = await getCurrentVersion(mod);
-        console.log("Read version for mod: ", mod, " Version: ", mods[mod].currentVersion)
-    }
-    for (let mod of Object.keys(mods)) {
-        if (mod == "3853484") {
-            console.log(mods[mod])
-        }
-    }
-    modsStore.set(mods);
+    return localMods;
 }
 
 function assignModData(data: any) {
@@ -267,25 +274,36 @@ function assignModData(data: any) {
             mods[data.id].latestVersion = platform.modfile_live;
         }
     }
+
+    for (const tag of data.tags) {
+        if (tag.name) {
+            mods[data.id].type = tag.name;
+        }
+    }
+
+
     if (mods[data.id].latestVersion == undefined) {
         mods = Object.fromEntries(
             Object.entries(mods).filter(([key]) => key != data.id)
         );
         modsStore.set(mods);
-        return Error;
+        console.log("No windows version for mod: ", data.id);
+        return false;
     }
+
     modsStore.set(mods);
+    return true;
 }
 
 async function getSubscriptions() {
-    const mods = get(modsStore);
-
     let allRead = false;
     let page = 0;
 
+    let subscriptions: Array<any> = [];
+
     while (!allRead) {
         const response = await modioRequest(
-            `/me/subscribed?game_id=3959&platforms=windows`,
+            `/me/subscribed?game_id=3959&platforms=windows&_offset=${page * 100}`,
             "GET"
         );
         if (!response.ok) {
@@ -296,8 +314,7 @@ async function getSubscriptions() {
         const data = await response.json();
 
         for (const mod of data.data) {
-            assignModData(mod);
-            mods[mod.id].subscribed = true;
+            subscriptions.push(mod);
         }
 
         if (data.result_count == 100) {
@@ -306,7 +323,8 @@ async function getSubscriptions() {
             allRead = true;
         }
     }
-    modsStore.set(mods);
+
+    return subscriptions;
 }
 
 export async function subscribe(mod: string) {
@@ -425,7 +443,7 @@ async function setAvatarUrl() {
         const data = await response.json();
         return data.avatar.thumb_100x100;
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error while setting avatar_url:", error);
         return;
     }
 }

@@ -35,11 +35,17 @@
   import { onMount } from "svelte";
   import {
     addDownload,
-    getMaps,
+    loadMods,
     subscribe,
     testOauthToken,
     changeOauthToken,
   } from "$lib/modio-utils";
+  import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+  } from "$components/ui/accordion";
 
   const config = new Store(".config.dat");
 
@@ -80,7 +86,7 @@
       return;
     }
 
-    getMaps();
+    loadMods();
 
     $appStore.status = "Removing old .zip files";
     try {
@@ -108,7 +114,7 @@
         class="flex flex-col items-center justify-center w-full max-w-6xl gap-y-5"
       >
         <LoaderCircle size="50" class="animate-spin" />
-        {status}
+        {$appStore.status}
       </div>
     {:else if $modsStore != null}
       <div class="flex flex-col w-full max-w-6xl gap-y-5">
@@ -211,35 +217,43 @@
             </div>
           </div>
         </div>
-        <div
-          class="flex flex-col justify-start items-start {allUpdated &&
-          $queueStore.length == 0
-            ? 'hidden'
-            : ''}"
-        >
-          <h2 class="text-xl">New update available</h2>
-          <div
-            class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        <Accordion value={["new_update", "updated"]}>
+          <AccordionItem
+            value="new_update"
+            class="flex flex-col justify-start items-start pb-1 {allUpdated &&
+            $queueStore.length == 0
+              ? 'hidden'
+              : ''}"
           >
-            {#each Object.keys($modsStore) as mod}
-              {#if $modsStore[mod].currentVersion != $modsStore[mod].latestVersion}
-                <ModCard {mod} />
-              {/if}
-            {/each}
-          </div>
-        </div>
-        <div class="flex flex-col items-start justify-start">
-          <h2 class="text-xl">Up to date</h2>
-          <div
-            class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            <AccordionTrigger class="text-xl"
+              >New update available</AccordionTrigger
+            >
+            <AccordionContent
+              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {#each Object.keys($modsStore) as mod}
+                {#if $modsStore[mod].currentVersion != $modsStore[mod].latestVersion}
+                  <ModCard {mod} />
+                {/if}
+              {/each}
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem
+            value="updated"
+            class="flex flex-col items-start justify-start pb-1 "
           >
-            {#each Object.keys($modsStore) as mod}
-              {#if $modsStore[mod].currentVersion == $modsStore[mod].latestVersion}
-                <ModCard {mod} />
-              {/if}
-            {/each}
-          </div>
-        </div>
+            <AccordionTrigger class="text-xl">Up to date</AccordionTrigger>
+            <AccordionContent
+              class="grid grid-cols-2 mt-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {#each Object.keys($modsStore) as mod}
+                {#if $modsStore[mod].currentVersion == $modsStore[mod].latestVersion}
+                  <ModCard {mod} />
+                {/if}
+              {/each}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     {:else}
       <div class="flex flex-col items-center justify-center">
@@ -291,9 +305,7 @@
         <Label>Mod.io OAuth token</Label>
         <div class="flex flex-row gap-1">
           <Input
-            placeholder={oauthToken == null
-              ? "Token"
-              : oauthToken}
+            placeholder={oauthToken == null ? "Token" : oauthToken}
             bind:value={newOauthToken}
           ></Input>
           <AlertDialog>

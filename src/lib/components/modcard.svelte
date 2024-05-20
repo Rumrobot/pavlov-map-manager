@@ -32,10 +32,12 @@
 
   let theme: string;
   let deletePopup: boolean;
+  let showType: boolean;
 
   onMount(async () => {
     theme = await config.get("theme");
-    deletePopup = await config.get("deletePopup");
+    deletePopup = await config.get("delete_popup");
+    showType = await config.get("show_type");
   });
 
   export let mod: string;
@@ -48,10 +50,14 @@
     >
   </CardHeader>
   <CardContent>
+    {#if showType}
+      <p class="flex justify-center mb-1.5 text-lg">{$modsStore[mod].type}</p>
+    {/if}
     <button
       on:click={() => open($modsStore[mod].modUrl)}
       role="link"
       tabindex="0"
+      class={!showType ? "mt-3" : ""}
     >
       <img
         src={$modsStore[mod].imageUrl}
@@ -60,7 +66,7 @@
       />
     </button>
     <div class="mt-1.5 flex flex-row justify-between">
-      {#if $modsStore[mod].currentVersion != $modsStore[mod].latestVersion }
+      {#if $modsStore[mod].currentVersion != $modsStore[mod].latestVersion}
         <Button
           on:click={() => addDownload(mod)}
           disabled={$queueStore.includes(mod.toString())}

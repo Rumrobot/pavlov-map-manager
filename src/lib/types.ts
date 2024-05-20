@@ -3,13 +3,12 @@ export interface ModData {
     title?: string;
     imageUrl?: string;
     modUrl?: string;
-    currentVersion?: string;
-    latestVersion?: string;
+    type?: string;
+    currentVersion?: number;
+    latestVersion?: number;
     subscribed?: boolean;
   }
 }
-
-
 
 export interface AppData {
   loading: boolean;

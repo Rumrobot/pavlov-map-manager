@@ -34,13 +34,15 @@
   let auto_path: boolean;
   let theme: string;
   let delete_popup: boolean;
+  let show_type: boolean;
 
   onMount(async () => {
     theme = (await config.get("theme")) as string;
-    oauth_token = await config.get("oauth_token");
-    mods_path = await config.get("mods_path");
-    auto_path = await config.get("auto_path");
-    delete_popup = await config.get("delete_popup");
+    oauth_token = await config.get("oauthToken");
+    mods_path = await config.get("modsPath");
+    auto_path = await config.get("autoPath");
+    delete_popup = await config.get("deletePopup");
+    show_type = await config.get("show_type");
   });
 
   async function setTheme(new_theme: string) {
@@ -52,30 +54,40 @@
   }
 
   async function change_mods_path(input: string) {
-    await config.set("mods_path", input);
+    await config.set("modsPath", input);
     mods_path = input;
     await config.save();
     toast.success("Mods path changed successfully");
   }
 
-  async function toggle_auto_path() {
+  async function autoPathSwitch() {
     if (!auto_path) {
       await change_mods_path(await getModsPath());
     }
-    await config.get("auto_path");
-    await config.set("auto_path", auto_path);
+    await config.get("autoPath");
+    await config.set("autoPath", auto_path);
     await config.save();
   }
 
   const delete_popup_switch = async () => {
-    await config.get("delete_popup");
-    await config.set("delete_popup", delete_popup);
+    await config.get("deletePopup");
+    await config.set("deletePopup", delete_popup);
+    await config.save();
+  };
+
+  const show_type_switch = async () => {
+    await config.get("show_type");
+    await config.set("show_type", show_type);
     await config.save();
   };
 </script>
 
 <div class="page-container flex flex-col justify-center items-center m-5">
   <div class="flex flex-col gap-y-5">
+    <div class="gap-3 items-center flex">
+      <Switch bind:checked={show_type} on:click={show_type_switch} />
+      <Label>Show map/mod type</Label>
+    </div>
     <div class="gap-3 items-center flex">
       <Switch bind:checked={delete_popup} on:click={delete_popup_switch} />
       <Label>Confirm popup on map deletion</Label>
@@ -125,13 +137,8 @@
     <div class="flex flex-col gap-1.5 justify-start items-start">
       <Label>Path to mods folder</Label>
       <div class="items-center flex gap-1.5">
-        <Switch
-        bind:checked={auto_path}
-        on:click={toggle_auto_path}
-        ></Switch>
-        <Label>
-          Auto path 
-        </Label>
+        <Switch bind:checked={auto_path} on:click={autoPathSwitch}></Switch>
+        <Label>Auto path</Label>
       </div>
       <div class="flex flex-row gap-x-1 justify-center items-center">
         <Tooltip>
