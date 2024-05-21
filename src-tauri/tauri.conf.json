@@ -27,7 +27,9 @@
         "removeFile": true,
         "renameFile": true,
         "exists": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       },
       "window": {
         "all": false,
@@ -53,7 +55,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.rumrobot.pavlov-map-manager",
+      "identifier": "dk.rumrobot.pavlov-map-manager",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -61,6 +63,15 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ]
+    },
+    "updater": {
+      "active": false,
+      "endpoints": [],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU2MjAzOTYxMjFDOEQyClJXVFN5Q0ZoT1NCV0FCNENFRHUwZVRkak1tLzNkY3ZPU2xUQzgrR1pCNGwrTnM3MzVXbGRBNXl0Cg==",
+      "windows": {
+        "installMode": "basicUi"
+      }
     }
   }
 }

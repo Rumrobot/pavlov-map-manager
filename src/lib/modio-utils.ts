@@ -398,7 +398,7 @@ export async function deleteMod(mod: string) {
 
 export async function changeOauthToken(input: string) {
 
-    if (await testOauthToken()) {
+    if (await testOauthToken(input)) {
         toast.success("OAuth token set successfully");
     } else {
         toast.error("Invalid OAuth token");

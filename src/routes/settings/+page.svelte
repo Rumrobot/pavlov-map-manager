@@ -54,7 +54,7 @@
   }
 
   async function change_mods_path(input: string) {
-    await config.set("modsPath", input);
+    await config.set("mods_path", input);
     mods_path = input;
     await config.save();
     toast.success("Mods path changed successfully");
