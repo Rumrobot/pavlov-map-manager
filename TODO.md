@@ -1,7 +1,6 @@
 # Todo
 
-- Clean up the code ofc.
-- som error handling for invalid mod folders
+- AppStatus error
 - check download hash
 
 ## New features

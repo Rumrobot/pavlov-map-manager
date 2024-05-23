@@ -2,6 +2,7 @@
   import { Store } from "tauri-plugin-store-api";
   import { Button } from "$components/ui/button";
   import {
+    CircleAlert,
     Home,
     Layers2,
     Maximize,
@@ -19,12 +20,26 @@
     PopoverContent,
     PopoverTrigger,
   } from "$components/ui/popover";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "$components/ui/dialog";
   import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
   import { Toaster } from "$components/ui/sonner";
   import { onMount } from "svelte";
   import { appWindow } from "@tauri-apps/api/window";
   import { OverlayScrollbars } from "overlayscrollbars";
   import { getModsPath } from "$lib/modio-utils";
+  import { tauriUpdater, update, getGithubInfo } from "$lib/tauri-updater";
+  import { fade } from "svelte/transition";
+  import SvelteMarkdown from "svelte-markdown";
+
+  tauriUpdater();
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -38,8 +53,11 @@
   const config = new Store(".config.dat");
   let fullscreen = false;
 
+  let githubInfo: any;
   let oauth_token: string;
   let avatar_url: string;
+  let new_update: boolean;
+  let theme: "dark" | "light";
 
   onMount(async () => {
     scrollbar = OverlayScrollbars(contentEl, {
@@ -53,12 +71,11 @@
     fullscreen = await appWindow.isMaximized();
 
     // Initialize settings, if they dont exist
-    const theme = await config.get("theme");
-    if (theme == null) {
+    if ((await config.get("theme")) == null) {
       await config.set("theme", "dark");
       setMode("dark");
     } else {
-      setMode(theme as "dark" | "light");
+      setMode((await config.get("theme")) as "dark" | "light");
     }
 
     if ((await config.get("mods_path")) == null) {
@@ -77,7 +94,17 @@
       await config.set("show_type", true);
     }
 
+    if ((await config.get("new_update")) == null) {
+      await config.set("new_update", false);
+    }
+
     await config.save();
+
+    theme = await config.get("theme");
+    new_update = await config.get("new_update");
+    avatar_url = await config.get("avatar_url");
+
+    githubInfo = await getGithubInfo();
   });
 
   const resize = async () => (fullscreen = await appWindow.isMaximized());
@@ -98,6 +125,31 @@
     </Button>
   </div>
   <div class="flex items-center gap-2">
+    {#if new_update}
+      <div transition:fade={{ duration: 1000 }}>
+        <Dialog>
+          <DialogTrigger>
+            <Button
+              variant="ghost"
+              class="flex justify-center items-center gap-2"
+            >
+              <CircleAlert color={theme == "dark" ? "#c32222" : "#ef4343"} />
+              <p>New update available</p>
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New update available</DialogTitle>
+              <DialogDescription>Pavlov Map Manager - {githubInfo.tag_name}</DialogDescription>
+            </DialogHeader>
+            <SvelteMarkdown source={githubInfo.body} />
+            <DialogFooter>
+              <Button on:click={update}>Update</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    {/if}
     <Popover>
       <PopoverTrigger asChild let:builder>
         <Button builders={[builder]} size="icon" variant="ghost">

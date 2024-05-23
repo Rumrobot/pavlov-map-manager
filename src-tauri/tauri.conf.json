@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Pavlov Map Manager",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "tauri": {
     "allowlist": {
@@ -66,12 +66,9 @@
     },
     "updater": {
       "active": true,
+      "dialog": false,
       "endpoints": ["https://www.rumrobot.dk/pavlov-map-manager/updates"],
-      "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVEOTdFMTVCNTA3MEYxNTUKUldSVjhYQlFXK0dYWGFqYVFLTzdQQ3NIeVVGaHRyajM4anZ0YllKaExLKyszbGZMNXlMTHg4RFMK",
-      "windows": {
-        "installMode": "basicUi"
-      }
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVEOTdFMTVCNTA3MEYxNTUKUldSVjhYQlFXK0dYWGFqYVFLTzdQQ3NIeVVGaHRyajM4anZ0YllKaExLKyszbGZMNXlMTHg4RFMK"
     }
   }
 }
