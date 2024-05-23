@@ -40,13 +40,13 @@ jobs:
 
       - uses: tauri-apps/tauri-action@dev
         env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          tauriScript: "bun tauri"
+          tauriScript: 'bun tauri'
           tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: "Pavlov Map Manager v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseName: 'Pavlov Map Manager v__VERSION__'
+          releaseBody: 'Pavlov Map Manager allows you to easily manage and install custom maps for the game Pavlov VR.'
           releaseDraft: true
           prerelease: false
