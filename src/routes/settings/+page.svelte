@@ -38,10 +38,10 @@
 
   onMount(async () => {
     theme = (await config.get("theme")) as string;
-    oauth_token = await config.get("oauthToken");
-    mods_path = await config.get("modsPath");
-    auto_path = await config.get("autoPath");
-    delete_popup = await config.get("deletePopup");
+    oauth_token = await config.get("oauth_token");
+    mods_path = await config.get("mods_path");
+    auto_path = await config.get("auto_path");
+    delete_popup = await config.get("delete_popup");
     show_type = await config.get("show_type");
   });
 
@@ -58,15 +58,6 @@
     mods_path = input;
     await config.save();
     toast.success("Mods path changed successfully");
-  }
-
-  async function autoPathSwitch() {
-    if (!auto_path) {
-      await change_mods_path(await getModsPath());
-    }
-    await config.get("autoPath");
-    await config.set("autoPath", auto_path);
-    await config.save();
   }
 
   const delete_popup_switch = async () => {
@@ -134,29 +125,30 @@
         </AlertDialog>
       </div>
     </div>
-    <div class="flex flex-col gap-1.5 justify-start items-start">
+    <div class="flex flex-col gap-1.5 justify-start items-start w-full">
       <Label>Path to mods folder</Label>
-      <div class="items-center flex gap-1.5">
-        <Switch bind:checked={auto_path} on:click={autoPathSwitch}></Switch>
-        <Label>Auto path</Label>
-      </div>
-      <div class="flex flex-row gap-x-1 justify-center items-center">
-        <Tooltip>
-          <TooltipTrigger>
-            <Input
-              placeholder={mods_path == null ? "Path" : mods_path}
-              bind:value={new_mods_path}
-            ></Input>
-          </TooltipTrigger>
-          <TooltipContent
-            class="flex flex-row gap-x-1 justify-center items-center"
-          >
-            <p>Default value:</p>
-            <p class="rounded bg-secondary/20 p-1">
-              C:\Users\%user%\AppData\Local\Pavlov\Saved\Mods
-            </p>
-          </TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger class="w-full">
+          <Input
+            placeholder={mods_path == null ? "Path" : mods_path}
+            bind:value={new_mods_path}
+          ></Input>
+        </TooltipTrigger>
+        <TooltipContent class="flex flex-row gap-1 justify-center items-center">
+          <p>Default value:</p>
+          <p class="rounded border border-border p-1">
+            C:\Users\%user%\AppData\Local\Pavlov\Saved\Mods
+          </p>
+        </TooltipContent>
+      </Tooltip>
+      <div class="flex justify-between items-center w-full">
+        <Button
+          class=""
+          variant="default"
+          on:click={async () => {
+            await change_mods_path(await getModsPath());
+          }}>Auto</Button
+        >
         <Button
           variant="outline"
           on:click={() => change_mods_path(new_mods_path)}>Confirm</Button
