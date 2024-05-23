@@ -66,7 +66,7 @@
     },
     "updater": {
       "active": false,
-      "endpoints": [],
+      "endpoints": ["https://www.rumrobot.dk/pavlov-map-manager/updates"],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU2MjAzOTYxMjFDOEQyClJXVFN5Q0ZoT1NCV0FCNENFRHUwZVRkak1tLzNkY3ZPU2xUQzgrR1pCNGwrTnM3MzVXbGRBNXl0Cg==",
       "windows": {
