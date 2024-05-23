@@ -86,7 +86,7 @@
       return;
     }
 
-    loadMods();
+    await loadMods();
 
     $appStore.status = "Removing old .zip files";
     try {

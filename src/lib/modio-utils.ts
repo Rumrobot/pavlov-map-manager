@@ -44,11 +44,20 @@ export async function loadMods() {
     const localMods = await getLocalMods();
     const subscriptions = await getSubscriptions();
 
+    app.status = "Assigning data";
+    appStore.set(app);
+
+    const max = localMods.length + subscriptions.length;
+    let current = 1;
+
     for (const modData of subscriptions) {
         if (assignModData(modData)) {
             mods = get(modsStore);
             mods[modData.id].subscribed = true;
         }
+        current++;
+        app.status = `Assigning data ${current}/${max}`;
+        appStore.set(app);
     }
 
     for (const mod of localMods) {
@@ -70,6 +79,10 @@ export async function loadMods() {
             }
         }
         mods[mod].currentVersion = await getCurrentVersion(mod);
+
+        current++;
+        app.status = `Assigning data ${current}/${max}`;
+        appStore.set(app);
     }
 
     modsStore.set(mods);
@@ -243,6 +256,10 @@ async function getCurrentVersion(mod: string) {
 }
 
 async function getLocalMods() {
+    const app = get(appStore);
+    app.status = "Checking local mods";
+    appStore.set(app);
+
     const modsPath = await config.get("mods_path");
 
     let localMods: Array<any> = [];
@@ -296,6 +313,10 @@ function assignModData(data: any) {
 }
 
 async function getSubscriptions() {
+    const app = get(appStore);
+    app.status = "Getting subscriptions";
+    appStore.set(app);
+
     let allRead = false;
     let page = 0;
 
