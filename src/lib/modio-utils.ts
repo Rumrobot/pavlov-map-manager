@@ -47,21 +47,18 @@ export async function loadMods() {
     app.status = "Assigning data";
     appStore.set(app);
 
-    const max = localMods.length + subscriptions.length;
+    const allMods = new Set([ ...subscriptions.map(sub => sub.id), ...localMods]);
+    const max = allMods.size;
     let current = 1;
 
-    for (const modData of subscriptions) {
-        if (assignModData(modData)) {
-            mods = get(modsStore);
-            mods[modData.id].subscribed = true;
-        }
-        current++;
-        app.status = `Assigning data ${current}/${max}`;
-        appStore.set(app);
-    }
-
-    for (const mod of localMods) {
-        if (!Object.keys(mods).includes(mod)) {
+    for (const mod of allMods) {
+        if (subscriptions.map(sub => sub.id).includes(mod)) {
+            const modData = subscriptions.find(sub => sub.id == mod);
+            if (assignModData(modData)) {
+                mods = get(modsStore);
+                mods[modData.id].subscribed = true;
+            }
+        } else {
             const response = await modioRequest(
                 `/games/3959/mods/${mod}`,
                 "GET"
@@ -78,7 +75,9 @@ export async function loadMods() {
                 mods[data.id].subscribed = true;
             }
         }
-        mods[mod].currentVersion = await getCurrentVersion(mod);
+        if (localMods.includes(mod)) {
+            mods[mod].currentVersion = await getCurrentVersion(mod);
+        }
 
         current++;
         app.status = `Assigning data ${current}/${max}`;
