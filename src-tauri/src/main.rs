@@ -1,8 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::fs;
+use std::{fs, io::Read};
 use std::fs::File;
+use md5::{Md5, Digest};
 
 #[tauri::command]
 fn ls(path: String) -> Result<Vec<String>, String> {
@@ -110,6 +111,38 @@ fn remove_dir(path: String) -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn md5(file_path: String) -> Result<String, String> {
+    // Read the file as binary
+    let parsed_path = file_path.replace("%user%", &whoami::username());
+    let mut file = match File::open(&parsed_path) {
+        Ok(file) => file,
+        Err(error) => {
+            return Err(format!(
+                "Error opening file: {} for path: {}",
+                error, parsed_path
+            ))
+        }
+    };
+
+    // Create a buffer to read the file contents
+    let mut buffer = Vec::new();
+    match file.read_to_end(&mut buffer) {
+        Ok(_) => {
+            // Calculate the MD5 hash
+            let mut hasher = Md5::new();
+            hasher.update(&buffer);
+            let hash = format!("{:x}", hasher.finalize());
+
+            Ok(hash)
+        },
+        Err(error) => Err(format!(
+            "Error reading file: {} for path: {}",
+            error, file_path
+        )),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -119,7 +152,8 @@ fn main() {
             read_file,
             extract_zip,
             write_text_file,
-            remove_dir
+            remove_dir,
+            md5
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

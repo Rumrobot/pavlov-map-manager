@@ -19,6 +19,7 @@ zip = "0.6"
 zip-extensions = "0.6"
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-upload = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+md-5 = "0.10.6"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

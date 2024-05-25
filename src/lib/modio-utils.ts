@@ -201,6 +201,21 @@ async function downloadMap(mod: string) {
         return;
     }
 
+    // Check MD5 hash of the file
+    const hash = await invoke("md5", { filePath: `${mod}.zip` });
+    
+    if (hash != fileInfo.filehash.md5) {
+        console.log("MD5 hash does not match for map: ", mods[mod].title);
+        toast.error(mods[mod].title + " didn't download correctly");
+        app.downloadStatus = "Error downloading file";
+        appStore.set(app);
+        return;
+    }
+
+    console.log("Mod: ", mods[mod].title);
+    console.log("MD5 hash: ", hash);
+    console.log("Expected MD5 hash: ", fileInfo.filehash.md5);
+
     // Extract the zip file
     app.downloadStatus = "Extracting the file";
     appStore.set(app);

@@ -16,7 +16,6 @@ export const tauriUpdater = async () => {
     
     const unlisten = await onUpdaterEvent(({ error, status }) => {
         // This will log all updater events, including status updates and errors.
-        console.log('Updater event', error, status)
     })
 
     try {
@@ -60,6 +59,5 @@ export const getGithubInfo = async () => {
     const repo = "pavlov-map-manager";
 
     const githubResp = await octokit.request(`GET /repos/${user}/${repo}/releases/latest`);
-    console.log(githubResp.data);
     return githubResp.data;
 }
