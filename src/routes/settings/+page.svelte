@@ -25,6 +25,7 @@
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
   import { getModsPath } from "$lib/modio-utils";
+  import { getVersion } from '@tauri-apps/api/app';
 
   const config = new Store(".config.dat");
   let new_oauth_token: string;
@@ -35,6 +36,7 @@
   let theme: string;
   let delete_popup: boolean;
   let show_type: boolean;
+  let app_version: string;
 
   onMount(async () => {
     theme = (await config.get("theme")) as string;
@@ -43,6 +45,7 @@
     auto_path = await config.get("auto_path");
     delete_popup = await config.get("delete_popup");
     show_type = await config.get("show_type");
+    app_version = await getVersion();
   });
 
   async function setTheme(new_theme: string) {
@@ -156,4 +159,7 @@
       </div>
     </div>
   </div>
+  <p class="mt-12 text-sm text-muted ">
+    Pavlov Map Manager v{app_version}
+  </p>
 </div>
