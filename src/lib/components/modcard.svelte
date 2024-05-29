@@ -45,9 +45,7 @@
 
 <Card class="items-center m-1 text-center">
   <CardHeader>
-    <CardTitle class="text-2xl truncate overflow-ellipsis"
-      >{$modsStore[mod].title}</CardTitle
-    >
+    <CardTitle class="text-2xl truncate">{$modsStore[mod].title}</CardTitle>
   </CardHeader>
   <CardContent>
     {#if showType}

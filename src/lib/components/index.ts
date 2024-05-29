@@ -1,1 +1,2 @@
-export { default as ModCard } from "./modcard.svelte"
+export { default as ModCard } from "./Modcard.svelte"
+export { default as ServerListTable } from "./ServerListTable.svelte"

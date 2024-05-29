@@ -8,3 +8,4 @@
 ## QOL
 
 - mbps counter
+- fixed sorting and filtering tools in the server list
