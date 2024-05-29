@@ -43,7 +43,7 @@
   import { gamemodes } from "$lib/pavlov-utils";
   import type { Filters } from "$lib/types";
 
-  tauriUpdater();
+  
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -73,6 +73,8 @@
       },
     });
     fullscreen = await appWindow.isMaximized();
+
+    await tauriUpdater();
 
     // Initialize settings, if they dont exist
     if ((await config.get("theme")) == null) {
