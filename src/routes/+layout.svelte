@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dev } from "$app/environment";
   import { goto } from "$app/navigation";
   import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
   import { Button } from "$components/ui/button";
@@ -20,8 +21,9 @@
   import { getModsPath } from "$lib/modio-utils";
   import { gamemodes } from "$lib/pavlov-utils";
   import { persistentStore } from "$lib/stores";
-  import { getGithubInfo, tauriUpdater, update } from "$lib/tauri-updater";
+  import { getGithubInfo, update } from "$lib/tauri-updater";
   import type { Filters } from "$lib/types";
+  import { checkUpdate } from "@tauri-apps/api/updater";
   import { appWindow } from "@tauri-apps/api/window";
   import {
     CircleAlert,
@@ -42,7 +44,6 @@
   import SvelteMarkdown from "svelte-markdown";
   import { fade } from "svelte/transition";
   import "../app.pcss";
-  import { dev } from "$app/environment";
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -73,7 +74,7 @@
     fullscreen = await appWindow.isMaximized();
 
     if (!dev) {
-      await tauriUpdater();
+      new_update = (await checkUpdate()).shouldUpdate;
     }
 
     // Initialize settings, if they dont exist
@@ -100,10 +101,6 @@
       await persistentStore.set("show_type", true);
     }
 
-    if ((await persistentStore.get("new_update")) == null) {
-      await persistentStore.set("new_update", false);
-    }
-
     if ((await persistentStore.get("favorite_servers")) == null) {
       await persistentStore.set("favorite_servers", []);
     }
@@ -128,7 +125,6 @@
     await persistentStore.save();
 
     theme = await persistentStore.get("theme");
-    new_update = await persistentStore.get("new_update");
     avatar_url = await persistentStore.get("avatar_url");
 
     githubInfo = await getGithubInfo();
