@@ -42,6 +42,7 @@
   import SvelteMarkdown from "svelte-markdown";
   import { fade } from "svelte/transition";
   import "../app.pcss";
+  import { dev } from "$app/environment";
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -71,7 +72,9 @@
     });
     fullscreen = await appWindow.isMaximized();
 
-    await tauriUpdater();
+    if (!dev) {
+      await tauriUpdater();
+    }
 
     // Initialize settings, if they dont exist
     if ((await persistentStore.get("theme")) == null) {
