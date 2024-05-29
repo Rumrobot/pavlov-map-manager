@@ -1,8 +1,12 @@
 import { writable } from 'svelte/store';
-import type { ModData, AppData } from '$lib/types';
+import type { ModData, AppData, ServerList } from '$lib/types';
+
+export const serverList = writable<ServerList>([]);
 
 export const modsStore = writable<ModData>({});
+
 export const queueStore = writable<string[]>([]);
+
 export const appStore = writable<AppData>({
     loading: false,
     status: "Init",

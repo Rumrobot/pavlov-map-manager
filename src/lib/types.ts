@@ -21,3 +21,22 @@ export interface AppData {
   queueOnGoing: number;
   initialQueueLength: number;
 }
+
+export type ServerList = {
+  name: string;
+  players: number;
+  maxPlayers: number;
+  map: string;
+  gamemode: string;
+  locked: boolean;
+}[];
+
+export type Filters = {
+  favorites: boolean;
+  full: boolean;
+  empty: boolean;
+  locked: boolean;
+  gamemodes: {
+    [gamemode: string]: boolean;
+  }
+};

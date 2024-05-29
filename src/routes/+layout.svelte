@@ -9,6 +9,7 @@
     Menu,
     Minus,
     RotateCw,
+    Server,
     Settings,
     X,
   } from "lucide-svelte";
@@ -38,6 +39,9 @@
   import { tauriUpdater, update, getGithubInfo } from "$lib/tauri-updater";
   import { fade } from "svelte/transition";
   import SvelteMarkdown from "svelte-markdown";
+  import { goto } from "$app/navigation";
+  import { gamemodes } from "$lib/pavlov-utils";
+  import type { Filters } from "$lib/types";
 
   tauriUpdater();
 
@@ -98,6 +102,24 @@
       await config.set("new_update", false);
     }
 
+    if ((await config.get("favorite_servers")) == null) {
+      await config.set("favorite_servers", []);
+    }
+    
+    if ((await config.get("server_filters")) == null) {
+      let filters: Filters = {
+        favorites: false,
+        full: false,
+        empty: false,
+        locked: false,
+        gamemodes: {},
+      };
+      for (const gamemode of gamemodes) {
+        filters = { ...filters, gamemodes: { ...filters.gamemodes, [gamemode]: false } };
+      }
+      await config.set("server_filters", filters);
+    }
+
     await config.save();
 
     theme = await config.get("theme");
@@ -123,6 +145,13 @@
     <Button on:click={() => location.reload()} variant="ghost" size="icon">
       <RotateCw class="w-6 h-6" />
     </Button>
+    <div class="border h-full w-0 mx-1" />
+    <Button
+      class="gap-2 px-2 text-md"
+      variant="ghost"
+      on:click={() => goto("/serverlist")}
+      ><Server /> Server List
+    </Button>
   </div>
   <div class="flex items-center gap-2">
     {#if new_update}
@@ -140,7 +169,9 @@
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New update available</DialogTitle>
-              <DialogDescription>Pavlov Map Manager - {githubInfo.tag_name}</DialogDescription>
+              <DialogDescription
+                >Pavlov Map Manager - {githubInfo.tag_name}</DialogDescription
+              >
             </DialogHeader>
             <SvelteMarkdown source={githubInfo.body} />
             <DialogFooter>
