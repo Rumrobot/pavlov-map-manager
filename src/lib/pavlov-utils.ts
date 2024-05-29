@@ -112,6 +112,13 @@ export const filterServerList = async () => {
     const favoriteServers: string[] = await config.get("favorite_servers");
     const filters: Filters = await config.get("server_filters");
     let filteredServers: ServerList = [];
+    let filterGamemodes: string[] = [];
+    for (const gamemode of gamemodes) {
+        if (filters.gamemodes[gamemode]) {
+            filterGamemodes.push(gamemode);
+        }
+    }
+    if (filterGamemodes.length == 0) filterGamemodes = gamemodes;
 
     console.log(filters)
 
@@ -130,10 +137,9 @@ export const filterServerList = async () => {
         if (filters.empty && server.players <= 0) {
             push = false;
         }
-        for (const gamemode of gamemodes) {
-            if (filters.gamemodes[gamemode] && server.gamemode != gamemode) {
-                push = false;
-            }
+
+        if (!filterGamemodes.includes(server.gamemode)) {
+            push = false;
         }
 
         if (push) filteredServers.push(server);
