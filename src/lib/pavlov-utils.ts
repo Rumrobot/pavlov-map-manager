@@ -58,6 +58,16 @@ export const toggleFavorite = async (name: string) => {
     await config.set("favorite_servers", favoriteServers);
 }
 
+export const getTotalPlayers = () => {
+    let totalPlayers = 0;
+
+    for (const server of fullServerList) {
+        totalPlayers += server.players;
+    }
+
+    return totalPlayers;
+}
+
 export const sortServerList = async (sortType: string = "players") => {
     let servers: ServerList = get(serverList);
     const favoriteServers: string[] = await config.get("favorite_servers");
@@ -72,28 +82,22 @@ export const sortServerList = async (sortType: string = "players") => {
 
     switch (sortType) {
         case "players":
-            console.log("player sort")
             servers = servers.sort((a, b) => b.players - a.players);
             favorites = favorites.sort((a, b) => b.players - a.players);
             break;
         case "name":
-            console.log("name sort")
             servers = servers.sort((a, b) => a.name.localeCompare(b.name));
             favorites = favorites.sort((a, b) => a.name.localeCompare(b.name));
             break;
         case "map":
-            console.log("map sort")
             servers = servers.sort((a, b) => a.map.localeCompare(b.map));
             favorites = favorites.sort((a, b) => a.map.localeCompare(b.map));
             break;
         case "gamemode":
-            console.log("gamemode sort")
             servers = servers.sort((a, b) => a.gamemode.localeCompare(b.gamemode));
             favorites = favorites.sort((a, b) => a.gamemode.localeCompare(b.gamemode));
             break;
     }
-
-    console.log("Sort types", sortType, previousSort)
 
     if (sortType === previousSort) {
         servers.reverse();
@@ -119,8 +123,6 @@ export const filterServerList = async () => {
         }
     }
     if (filterGamemodes.length == 0) filterGamemodes = gamemodes;
-
-    console.log(filters)
 
     for (const server of servers) {
         let push = true;

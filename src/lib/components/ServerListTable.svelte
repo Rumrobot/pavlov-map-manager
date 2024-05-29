@@ -17,18 +17,13 @@
     DropdownMenuLabel,
   } from "$components/ui/dropdown-menu";
   import { Separator } from "$components/ui/separator";
-  import {
-    ArrowUpDown,
-    LoaderCircle,
-    Lock,
-    RefreshCw,
-    Star,
-  } from "lucide-svelte";
+  import { ArrowUpDown, Lock, RefreshCw, Star } from "lucide-svelte";
   import { Button } from "$components/ui/button";
   import { serverList } from "$lib/stores";
   import {
     getServerList,
     toggleFavorite,
+    getTotalPlayers,
     sortServerList,
     filterServerList,
     gamemodes,
@@ -47,16 +42,10 @@
   let tableReloading = false;
   let version = "pc";
 
-  $: {
-    totalPlayers = 0;
-    for (let server of $serverList) {
-      totalPlayers += server.players;
-    }
-  }
-
   const reload = async () => {
     tableReloading = true;
     await getServerList(version);
+    totalPlayers = getTotalPlayers();
     tableReloading = false;
   };
 
@@ -70,6 +59,8 @@
     theme = await config.get("theme");
     favoriteServers = await config.get("favorite_servers");
     filters = await config.get("server_filters");
+
+    await reload();
   });
 </script>
 
