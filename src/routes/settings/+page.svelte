@@ -50,7 +50,7 @@
     setMode(new_theme as "dark" | "light" | "system");
     await persistentStore.set("theme", new_theme);
 
-    config.save();
+    await persistentStore.save();
     theme = new_theme;
   }
 
