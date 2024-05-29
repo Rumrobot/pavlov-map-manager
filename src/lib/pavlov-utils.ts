@@ -1,10 +1,7 @@
+import { persistentStore, serverList } from "$lib/stores";
 import type { Filters, ServerList } from "$lib/types";
-import { serverList } from "$lib/stores";
-import { Store } from "tauri-plugin-store-api";
 import { toast } from "svelte-sonner";
 import { get } from "svelte/store";
-
-const config = new Store(".config.dat");
 
 let previousSort = "";
 let fullServerList: ServerList;
@@ -48,14 +45,14 @@ export const getServerList = async (version: string = "pc") => {
 };
 
 export const toggleFavorite = async (name: string) => {
-    let favoriteServers: string[] = await config.get("favorite_servers");
+    let favoriteServers: string[] = await persistentStore.get("favorite_servers");
 
     if (!favoriteServers.includes(name)) {
         favoriteServers.push(name);
     } else if (favoriteServers.includes(name)) {
         favoriteServers = favoriteServers.filter((server) => server !== name);
     }
-    await config.set("favorite_servers", favoriteServers);
+    await persistentStore.set("favorite_servers", favoriteServers);
 }
 
 export const getTotalPlayers = () => {
@@ -70,7 +67,7 @@ export const getTotalPlayers = () => {
 
 export const sortServerList = async (sortType: string = "players") => {
     let servers: ServerList = get(serverList);
-    const favoriteServers: string[] = await config.get("favorite_servers");
+    const favoriteServers: string[] = await persistentStore.get("favorite_servers");
 
     let favorites: ServerList = [];
 
@@ -113,8 +110,8 @@ export const sortServerList = async (sortType: string = "players") => {
 
 export const filterServerList = async () => {
     let servers = fullServerList;
-    const favoriteServers: string[] = await config.get("favorite_servers");
-    const filters: Filters = await config.get("server_filters");
+    const favoriteServers: string[] = await persistentStore.get("favorite_servers");
+    const filters: Filters = await persistentStore.get("server_filters");
     let filteredServers: ServerList = [];
     let filterGamemodes: string[] = [];
     for (const gamemode of gamemodes) {

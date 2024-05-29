@@ -1,18 +1,16 @@
+import { relaunch } from '@tauri-apps/api/process';
 import {
     checkUpdate,
     installUpdate,
     onUpdaterEvent,
-} from '@tauri-apps/api/updater'
-import { relaunch } from '@tauri-apps/api/process'
-import { toast } from 'svelte-sonner'
-import { Store } from "tauri-plugin-store-api";
+} from '@tauri-apps/api/updater';
 import { Octokit } from "octokit";
-
-const config = new Store(".config.dat");
+import { toast } from 'svelte-sonner';
+import { persistentStore } from './stores';
 
 export const tauriUpdater = async () => {
-    await config.set("new_update", false);
-    await config.save();
+    await persistentStore.set("new_update", false);
+    await persistentStore.save();
     
     const unlisten = await onUpdaterEvent(({ error, status }) => {
         // This will log all updater events, including status updates and errors.
@@ -21,8 +19,8 @@ export const tauriUpdater = async () => {
     try {
         const { shouldUpdate, manifest } = await checkUpdate()
 
-        await config.set("new_update", true);
-        await config.save();
+        await persistentStore.set("new_update", true);
+        await persistentStore.save();
 
         if (shouldUpdate) {
             const updateToast = toast("New update available", {
@@ -46,8 +44,8 @@ export const tauriUpdater = async () => {
 }
 
 export const update = async () => {
-    await config.set("new_update", false);
-    await config.save();
+    await persistentStore.set("new_update", false);
+    await persistentStore.save();
     await installUpdate()
     await relaunch()
 }

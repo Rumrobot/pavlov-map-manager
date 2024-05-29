@@ -1,6 +1,28 @@
 <script lang="ts">
-  import { Store } from "tauri-plugin-store-api";
+  import { goto } from "$app/navigation";
+  import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
   import { Button } from "$components/ui/button";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "$components/ui/dialog";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "$components/ui/popover";
+  import { Toaster } from "$components/ui/sonner";
+  import { getModsPath } from "$lib/modio-utils";
+  import { gamemodes } from "$lib/pavlov-utils";
+  import { persistentStore } from "$lib/stores";
+  import { getGithubInfo, tauriUpdater, update } from "$lib/tauri-updater";
+  import type { Filters } from "$lib/types";
+  import { appWindow } from "@tauri-apps/api/window";
   import {
     CircleAlert,
     Home,
@@ -13,37 +35,13 @@
     Settings,
     X,
   } from "lucide-svelte";
-  import "overlayscrollbars/overlayscrollbars.css";
-  import "../app.pcss";
-  import { ModeWatcher, setMode, mode } from "mode-watcher";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "$components/ui/popover";
-  import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-  } from "$components/ui/dialog";
-  import { Avatar, AvatarFallback, AvatarImage } from "$components/ui/avatar";
-  import { Toaster } from "$components/ui/sonner";
-  import { onMount } from "svelte";
-  import { appWindow } from "@tauri-apps/api/window";
+  import { ModeWatcher, mode, setMode } from "mode-watcher";
   import { OverlayScrollbars } from "overlayscrollbars";
-  import { getModsPath } from "$lib/modio-utils";
-  import { tauriUpdater, update, getGithubInfo } from "$lib/tauri-updater";
-  import { fade } from "svelte/transition";
+  import "overlayscrollbars/overlayscrollbars.css";
+  import { onMount } from "svelte";
   import SvelteMarkdown from "svelte-markdown";
-  import { goto } from "$app/navigation";
-  import { gamemodes } from "$lib/pavlov-utils";
-  import type { Filters } from "$lib/types";
-
-  
+  import { fade } from "svelte/transition";
+  import "../app.pcss";
 
   let contentEl: HTMLDivElement;
   let scrollbar: OverlayScrollbars;
@@ -54,7 +52,6 @@
       },
     });
 
-  const config = new Store(".config.dat");
   let fullscreen = false;
 
   let githubInfo: any;
@@ -77,38 +74,38 @@
     await tauriUpdater();
 
     // Initialize settings, if they dont exist
-    if ((await config.get("theme")) == null) {
-      await config.set("theme", "dark");
+    if ((await persistentStore.get("theme")) == null) {
+      await persistentStore.set("theme", "dark");
       setMode("dark");
     } else {
-      setMode((await config.get("theme")) as "dark" | "light");
+      setMode((await persistentStore.get("theme")) as "dark" | "light");
     }
 
-    if ((await config.get("mods_path")) == null) {
+    if ((await persistentStore.get("mods_path")) == null) {
       getModsPath();
     }
 
-    if ((await config.get("delete_popup")) == null) {
-      await config.set("delete_popup", true);
+    if ((await persistentStore.get("delete_popup")) == null) {
+      await persistentStore.set("delete_popup", true);
     }
 
-    if ((await config.get("auto_path")) == null) {
-      await config.set("auto_path", true);
+    if ((await persistentStore.get("auto_path")) == null) {
+      await persistentStore.set("auto_path", true);
     }
 
-    if ((await config.get("show_type")) == null) {
-      await config.set("show_type", true);
+    if ((await persistentStore.get("show_type")) == null) {
+      await persistentStore.set("show_type", true);
     }
 
-    if ((await config.get("new_update")) == null) {
-      await config.set("new_update", false);
+    if ((await persistentStore.get("new_update")) == null) {
+      await persistentStore.set("new_update", false);
     }
 
-    if ((await config.get("favorite_servers")) == null) {
-      await config.set("favorite_servers", []);
+    if ((await persistentStore.get("favorite_servers")) == null) {
+      await persistentStore.set("favorite_servers", []);
     }
-    
-    if ((await config.get("server_filters")) == null) {
+
+    if ((await persistentStore.get("server_filters")) == null) {
       let filters: Filters = {
         favorites: false,
         full: false,
@@ -117,16 +114,19 @@
         gamemodes: {},
       };
       for (const gamemode of gamemodes) {
-        filters = { ...filters, gamemodes: { ...filters.gamemodes, [gamemode]: false } };
+        filters = {
+          ...filters,
+          gamemodes: { ...filters.gamemodes, [gamemode]: false },
+        };
       }
-      await config.set("server_filters", filters);
+      await persistentStore.set("server_filters", filters);
     }
 
-    await config.save();
+    await persistentStore.save();
 
-    theme = await config.get("theme");
-    new_update = await config.get("new_update");
-    avatar_url = await config.get("avatar_url");
+    theme = await persistentStore.get("theme");
+    new_update = await persistentStore.get("new_update");
+    avatar_url = await persistentStore.get("avatar_url");
 
     githubInfo = await getGithubInfo();
   });

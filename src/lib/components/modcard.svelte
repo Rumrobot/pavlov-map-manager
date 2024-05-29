@@ -1,13 +1,5 @@
 <script lang="ts">
   import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-  } from "$components/ui/card";
-  import { Button } from "$components/ui/button";
-  import { ArrowDownToLine, Star, Trash } from "lucide-svelte";
-  import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -18,26 +10,31 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
+  import { Button } from "$components/ui/button";
+  import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+  } from "$components/ui/card";
   import {
     addDownload,
     deleteMod,
     subscribe,
     unsubscribe,
   } from "$lib/modio-utils";
-  import { modsStore, queueStore } from "$lib/stores";
-  import { Store } from "tauri-plugin-store-api";
+  import { modsStore, persistentStore, queueStore } from "$lib/stores";
+  import { ArrowDownToLine, Star, Trash } from "lucide-svelte";
   import { onMount } from "svelte";
-
-  const config = new Store(".config.dat");
 
   let theme: string;
   let deletePopup: boolean;
   let showType: boolean;
 
   onMount(async () => {
-    theme = await config.get("theme");
-    deletePopup = await config.get("delete_popup");
-    showType = await config.get("show_type");
+    theme = await persistentStore.get("theme");
+    deletePopup = await persistentStore.get("delete_popup");
+    showType = await persistentStore.get("show_type");
   });
 
   export let mod: string;

@@ -1,9 +1,4 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import { setMode } from "mode-watcher";
-  import { Store } from "tauri-plugin-store-api";
-  import { Input } from "$components/ui/input/";
-  import { Label } from "$components/ui/label";
   import {
     AlertDialog,
     AlertDialogAction,
@@ -15,19 +10,22 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "$components/ui/alert-dialog";
-  import { changeOauthToken } from "$lib/modio-utils";
+  import { Input } from "$components/ui/input/";
+  import { Label } from "$components/ui/label";
+  import { Switch } from "$components/ui/switch";
   import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
   } from "$components/ui/tooltip";
-  import { Switch } from "$components/ui/switch";
+  import { Button } from "$lib/components/ui/button";
+  import { changeOauthToken, getModsPath } from "$lib/modio-utils";
+  import { persistentStore } from "$lib/stores";
+  import { getVersion } from '@tauri-apps/api/app';
+  import { setMode } from "mode-watcher";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
-  import { getModsPath } from "$lib/modio-utils";
-  import { getVersion } from '@tauri-apps/api/app';
 
-  const config = new Store(".config.dat");
   let new_oauth_token: string;
   let new_mods_path: string;
   let oauth_token: string;
@@ -39,40 +37,40 @@
   let app_version: string;
 
   onMount(async () => {
-    theme = (await config.get("theme")) as string;
-    oauth_token = await config.get("oauth_token");
-    mods_path = await config.get("mods_path");
-    auto_path = await config.get("auto_path");
-    delete_popup = await config.get("delete_popup");
-    show_type = await config.get("show_type");
+    theme = (await persistentStore.get("theme")) as string;
+    oauth_token = await persistentStore.get("oauth_token");
+    mods_path = await persistentStore.get("mods_path");
+    auto_path = await persistentStore.get("auto_path");
+    delete_popup = await persistentStore.get("delete_popup");
+    show_type = await persistentStore.get("show_type");
     app_version = await getVersion();
   });
 
   async function setTheme(new_theme: string) {
     setMode(new_theme as "dark" | "light" | "system");
-    await config.set("theme", new_theme);
+    await persistentStore.set("theme", new_theme);
 
     config.save();
     theme = new_theme;
   }
 
   async function change_mods_path(input: string) {
-    await config.set("mods_path", input);
+    await persistentStore.set("mods_path", input);
     mods_path = input;
-    await config.save();
+    await persistentStore.save();
     toast.success("Mods path changed successfully");
   }
 
   const delete_popup_switch = async () => {
-    await config.get("deletePopup");
-    await config.set("deletePopup", delete_popup);
-    await config.save();
+    await persistentStore.get("deletePopup");
+    await persistentStore.set("deletePopup", delete_popup);
+    await persistentStore.save();
   };
 
   const show_type_switch = async () => {
-    await config.get("show_type");
-    await config.set("show_type", show_type);
-    await config.save();
+    await persistentStore.get("show_type");
+    await persistentStore.set("show_type", show_type);
+    await persistentStore.save();
   };
 </script>
 

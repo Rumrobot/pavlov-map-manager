@@ -1,5 +1,8 @@
 import { writable } from 'svelte/store';
 import type { ModData, AppData, ServerList } from '$lib/types';
+import { Store } from 'tauri-plugin-store-api';
+
+export const persistentStore = new Store(".config.dat");
 
 export const serverList = writable<ServerList>([]);
 

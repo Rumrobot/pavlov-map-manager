@@ -1,4 +1,15 @@
 <script lang="ts">
+  import { Button } from "$components/ui/button";
+  import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+  } from "$components/ui/dropdown-menu";
+  import { Separator } from "$components/ui/separator";
   import {
     Table,
     TableBody,
@@ -8,15 +19,15 @@
     TableRow,
   } from "$components/ui/table";
   import {
-    DropdownMenu,
-    DropdownMenuGroup,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuCheckboxItem,
-    DropdownMenuLabel,
-  } from "$components/ui/dropdown-menu";
-  import { Separator } from "$components/ui/separator";
+    filterServerList,
+    gamemodes,
+    getServerList,
+    getTotalPlayers,
+    sortServerList,
+    toggleFavorite,
+  } from "$lib/pavlov-utils";
+  import { persistentStore, serverList } from "$lib/stores";
+  import type { Filters } from "$lib/types";
   import {
     ArrowUpDown,
     LoaderCircle,
@@ -24,21 +35,7 @@
     RefreshCw,
     Star,
   } from "lucide-svelte";
-  import { Button } from "$components/ui/button";
-  import { serverList } from "$lib/stores";
-  import {
-    getServerList,
-    toggleFavorite,
-    getTotalPlayers,
-    sortServerList,
-    filterServerList,
-    gamemodes,
-  } from "$lib/pavlov-utils";
-  import { Store } from "tauri-plugin-store-api";
   import { onMount } from "svelte";
-  import type { Filters } from "$lib/types";
-
-  let config = new Store(".config.dat");
 
   let theme: string;
   let favoriteServers: string[];
@@ -57,15 +54,15 @@
   };
 
   const setFilters = async () => {
-    await config.get("server_filters");
-    await config.set("server_filters", filters);
+    await persistentStore.get("server_filters");
+    await persistentStore.set("server_filters", filters);
     await filterServerList();
   };
 
   onMount(async () => {
-    theme = await config.get("theme");
-    favoriteServers = await config.get("favorite_servers");
-    filters = await config.get("server_filters");
+    theme = await persistentStore.get("theme");
+    favoriteServers = await persistentStore.get("favorite_servers");
+    filters = await persistentStore.get("server_filters");
 
     await reload();
     loading = false;
@@ -190,7 +187,7 @@
                 size="icon"
                 on:click={async () => {
                   await toggleFavorite(server.name);
-                  favoriteServers = await config.get("favorite_servers");
+                  favoriteServers = await persistentStore.get("favorite_servers");
                 }}
               >
                 <Star

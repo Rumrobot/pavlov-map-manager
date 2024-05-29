@@ -1,13 +1,11 @@
-import Bottleneck from "bottleneck";
-import { Store } from "tauri-plugin-store-api";
-import { get } from "svelte/store";
-import { modsStore, queueStore, appStore } from "$lib/stores";
-import { toast } from "svelte-sonner";
+import { appStore, modsStore, persistentStore, queueStore } from "$lib/stores";
 import { invoke } from "@tauri-apps/api";
 import { removeFile } from "@tauri-apps/api/fs";
+import Bottleneck from "bottleneck";
+import { toast } from "svelte-sonner";
+import { get } from "svelte/store";
 import { download } from "tauri-plugin-upload-api";
 
-const config = new Store(".config.dat");
 const limiter = new Bottleneck({
     minTime: 100,
 });
@@ -19,7 +17,7 @@ export async function modioRequest(
     headers: any = {},
     body?: string
 ) {
-    headers.Authorization = "Bearer " + await config.get("oauth_token");
+    headers.Authorization = "Bearer " + await persistentStore.get("oauth_token");
     headers.Accept = "application/json";
 
     const response = await limiter.schedule(() =>
@@ -136,8 +134,8 @@ async function downloadMap(mod: string) {
     // Initiate the svelte stores
     const mods = get(modsStore);
     const app = get(appStore);
-    const modsPath = await config.get("mods_path");
-    const oauthToken = await config.get("oauth_token");
+    const modsPath = await persistentStore.get("mods_path");
+    const oauthToken = await persistentStore.get("oauth_token");
 
     // Set app data
     app.currentlyDownloading = mods[mod].title;
@@ -254,7 +252,7 @@ async function downloadMap(mod: string) {
 }
 
 async function getCurrentVersion(mod: string) {
-    const modsPath = await config.get("mods_path");
+    const modsPath = await persistentStore.get("mods_path");
 
     const filePath = `${modsPath}\\UGC${mod}\\taint`;
     let currentVersion: string;
@@ -274,7 +272,7 @@ async function getLocalMods() {
     app.status = "Checking local mods";
     appStore.set(app);
 
-    const modsPath = await config.get("mods_path");
+    const modsPath = await persistentStore.get("mods_path");
 
     let localMods: Array<any> = [];
     try {
@@ -427,7 +425,7 @@ export async function deleteMod(mod: string) {
     ));
 
     await invoke("remove_dir", {
-        path: `${await config.get("mods_path")}\\UGC${mod}`,
+        path: `${await persistentStore.get("mods_path")}\\UGC${mod}`,
     });
 }
 
@@ -440,10 +438,9 @@ export async function changeOauthToken(input: string) {
         return;
     }
 
-    await config.set("oauth_token", input);
-    await config.save();
-    await config.set("avatar_url", await setAvatarUrl());
-    await config.save();
+    await persistentStore.set("oauth_token", input);
+    await persistentStore.set("avatar_url", await setAvatarUrl());
+    await persistentStore.save();
 
     location.reload();
 }
@@ -451,7 +448,7 @@ export async function changeOauthToken(input: string) {
 export async function testOauthToken(input?: string) {
     let token: string;
     if (!input) {
-        token = await config.get("oauth_token");
+        token = await persistentStore.get("oauth_token");
     } else {
         token = input;
     }
