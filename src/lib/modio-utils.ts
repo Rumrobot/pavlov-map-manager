@@ -45,7 +45,7 @@ export async function loadMods() {
     app.status = "Assigning data";
     appStore.set(app);
 
-    const allMods = new Set([ ...subscriptions.map(sub => sub.id), ...localMods]);
+    const allMods = new Set([...subscriptions.map(sub => sub.id), ...localMods]);
     const max = allMods.size;
     let current = 1;
 
@@ -181,15 +181,24 @@ async function downloadMap(mod: string) {
         headers.set("Accept", "application/json");
         headers.set("X-Modio-Platform", "windows");
 
+        let recSize = 0;
+        let updateCounter = 0;
+        let lastUpdate = 0;
+
         await download(
             fileInfo.download.binary_url,
             `${mod}.zip`,
             (progress, total) => {
-                app.receivedSize += progress;
-                appStore.set(app);
+                recSize += progress;
+                updateCounter++;
+                if (updateCounter - lastUpdate > 200) {
+                    appStore.update((store) => ({ ...store, receivedSize: recSize }));
+                    lastUpdate = updateCounter;
+                }
             },
             headers
         );
+        //console.log("Took ", updateCounter, " updates to download the file");
     } catch (error) {
         toast.error("Error while downloading file");
         console.log("Error while downloading file: ", error);
@@ -201,7 +210,7 @@ async function downloadMap(mod: string) {
 
     // Check MD5 hash of the file
     const hash = await invoke("md5", { filePath: `${mod}.zip` });
-    
+
     if (hash != fileInfo.filehash.md5) {
         console.log("MD5 hash does not match for map: ", mods[mod].title);
         toast.error(mods[mod].title + " didn't download correctly");

@@ -1,11 +1,9 @@
 # Todo
+## Fixes
 
 ## New features
-
-- Cancel button for downloading
-- map and mod filtering
+- different languages
 
 ## QOL
-
+- Cancel button for downloading
 - mbps counter
-- fixed sorting and filtering tools in the server list
