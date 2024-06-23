@@ -64,49 +64,50 @@
     }
   }
 
-  let loading = true;
   onMount(async () => {
     oauthToken = await persistentStore.get("oauth_token");
     theme = await persistentStore.get("theme");
 
-    if (!oauthToken) {
-      loading = false;
-      return;
-    }
-
-    $appStore.status = "Checking OAuth token";
-    const validOauthToken = await testOauthToken(oauthToken);
-    if (!validOauthToken) {
-      oauthToken = null;
-      persistentStore.set("oauth_token", null);
-      persistentStore.set("avatar_url", null);
-      loading = false;
-      return;
-    }
-
-    await loadMods();
-
-    $appStore.status = "Removing old .zip files";
-    try {
-      const files: Array<string> = await invoke("ls", {
-        path: "./",
-      });
-      for (const file of files) {
-        if (file.endsWith(".zip")) {
-          await removeFile(file);
-        }
+    if ($appStore.loading) {
+      if (!oauthToken) {
+        $appStore.loading = false;
+        return;
       }
-    } catch (error) {
-      return;
-    }
 
-    $appStore.status = "Done";
-    loading = false;
+      $appStore.status = "Checking OAuth token";
+      const validOauthToken = await testOauthToken(oauthToken);
+      if (!validOauthToken) {
+        oauthToken = null;
+        persistentStore.set("oauth_token", null);
+        persistentStore.set("avatar_url", null);
+        $appStore.loading = false;
+        return;
+      }
+
+      await loadMods();
+
+      $appStore.status = "Removing old .zip files";
+      try {
+        const files: Array<string> = await invoke("ls", {
+          path: "./",
+        });
+        for (const file of files) {
+          if (file.endsWith(".zip")) {
+            await removeFile(file);
+          }
+        }
+      } catch (error) {
+        return;
+      }
+
+      $appStore.status = "Done";
+      $appStore.loading = false;
+    }
   });
 </script>
 
 <div class="flex items-center justify-center m-5">
-  {#if !loading}
+  {#if !$appStore.loading}
     {#if oauthToken}
       {#if $modsStore != null}
         <div class="flex flex-col w-full max-w-6xl gap-2">
@@ -139,9 +140,9 @@
                     {humanFileSize($appStore.downloadSpeed)}/s
                   </span>
                   <span
-                    >{humanFileSize(
-                      $appStore.receivedSize
-                    )}/{humanFileSize($appStore.totalSize)}</span
+                    >{humanFileSize($appStore.receivedSize)}/{humanFileSize(
+                      $appStore.totalSize
+                    )}</span
                   >
                 </div>
               </div>

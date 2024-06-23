@@ -11,7 +11,7 @@ export const modsStore = writable<ModData>({});
 export const queueStore = writable<string[]>([]);
 
 export const appStore = writable<AppData>({
-    loading: false,
+    loading: true,
     status: "Init",
     downloading: false,
     receivedSize: 0,
