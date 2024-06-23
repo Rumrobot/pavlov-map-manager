@@ -69,39 +69,39 @@
     oauthToken = await persistentStore.get("oauth_token");
     theme = await persistentStore.get("theme");
 
-      if (!oauthToken) {
-        loading = false;
-        return;
-      }
-
-      $appStore.status = "Checking OAuth token";
-      const validOauthToken = await testOauthToken(oauthToken);
-      if (!validOauthToken) {
-        oauthToken = null;
-        persistentStore.set("oauth_token", null);
-        persistentStore.set("avatar_url", null);
-        loading = false;
-        return;
-      }
-
-      await loadMods();
-
-      $appStore.status = "Removing old .zip files";
-      try {
-        const files: Array<string> = await invoke("ls", {
-          path: "./",
-        });
-        for (const file of files) {
-          if (file.endsWith(".zip")) {
-            await removeFile(file);
-          }
-        }
-      } catch (error) {
-        return;
-      }
-
-      $appStore.status = "Done";
+    if (!oauthToken) {
       loading = false;
+      return;
+    }
+
+    $appStore.status = "Checking OAuth token";
+    const validOauthToken = await testOauthToken(oauthToken);
+    if (!validOauthToken) {
+      oauthToken = null;
+      persistentStore.set("oauth_token", null);
+      persistentStore.set("avatar_url", null);
+      loading = false;
+      return;
+    }
+
+    await loadMods();
+
+    $appStore.status = "Removing old .zip files";
+    try {
+      const files: Array<string> = await invoke("ls", {
+        path: "./",
+      });
+      for (const file of files) {
+        if (file.endsWith(".zip")) {
+          await removeFile(file);
+        }
+      }
+    } catch (error) {
+      return;
+    }
+
+    $appStore.status = "Done";
+    loading = false;
   });
 </script>
 
@@ -134,11 +134,16 @@
                     >{$appStore.queueOnGoing}/{$appStore.initialQueueLength}</span
                   >
                 {/if}
-                <span
-                  >{humanFileSize($appStore.downloadSpeed)}/s - {humanFileSize(
-                    $appStore.receivedSize
-                  )}/{humanFileSize($appStore.totalSize)}</span
-                >
+                <div class="flex flex-col justify-center items-center min-w-5">
+                  <span>
+                    {humanFileSize($appStore.downloadSpeed)}/s
+                  </span>
+                  <span
+                    >{humanFileSize(
+                      $appStore.receivedSize
+                    )}/{humanFileSize($appStore.totalSize)}</span
+                  >
+                </div>
               </div>
               <div
                 class="items-center justify-self-center flex {$appStore.downloading
