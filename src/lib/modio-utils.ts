@@ -142,6 +142,7 @@ async function downloadMap(mod: string) {
     app.downloadStatus = "Checking new mod version";
     app.totalSize = 0;
     app.receivedSize = 0;
+    app.downloadSpeed = 0;
 
     appStore.set(app);
 
@@ -431,13 +432,17 @@ export async function unsubscribe(mod: string) {
 export async function deleteMod(mod: string) {
     const mods = get(modsStore);
 
-    modsStore.set(Object.fromEntries(
-        Object.entries(mods).filter(([key, value]) => key != mod)
-    ));
+    try {
+        await invoke("remove_dir", {
+            path: `${await persistentStore.get("mods_path")}\\UGC${mod}`,
+        });
+    }
+    catch (error) {
+        toast.error("Error while deleting map: " + mods[mod].title);
+    }
 
-    await invoke("remove_dir", {
-        path: `${await persistentStore.get("mods_path")}\\UGC${mod}`,
-    });
+    mods[mod].currentVersion = undefined;
+    modsStore.set(mods);
 }
 
 export async function changeOauthToken(input: string) {
