@@ -16,6 +16,7 @@ export interface AppData {
   downloading: boolean;
   receivedSize: number;
   totalSize: number;
+  downloadSpeed: number;
   downloadStatus: string;
   currentlyDownloading: string;
   queueOnGoing: number;

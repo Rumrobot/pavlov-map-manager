@@ -69,39 +69,39 @@
     oauthToken = await persistentStore.get("oauth_token");
     theme = await persistentStore.get("theme");
 
-    if (!oauthToken) {
-      loading = false;
-      return;
-    }
-
-    $appStore.status = "Checking OAuth token";
-    const validOauthToken = await testOauthToken(oauthToken);
-    if (!validOauthToken) {
-      oauthToken = null;
-      persistentStore.set("oauth_token", null);
-      persistentStore.set("avatar_url", null);
-      loading = false;
-      return;
-    }
-
-    await loadMods();
-
-    $appStore.status = "Removing old .zip files";
-    try {
-      const files: Array<string> = await invoke("ls", {
-        path: "./",
-      });
-      for (const file of files) {
-        if (file.endsWith(".zip")) {
-          await removeFile(file);
-        }
+      if (!oauthToken) {
+        loading = false;
+        return;
       }
-    } catch (error) {
-      return;
-    }
 
-    $appStore.status = "Done";
-    loading = false;
+      $appStore.status = "Checking OAuth token";
+      const validOauthToken = await testOauthToken(oauthToken);
+      if (!validOauthToken) {
+        oauthToken = null;
+        persistentStore.set("oauth_token", null);
+        persistentStore.set("avatar_url", null);
+        loading = false;
+        return;
+      }
+
+      await loadMods();
+
+      $appStore.status = "Removing old .zip files";
+      try {
+        const files: Array<string> = await invoke("ls", {
+          path: "./",
+        });
+        for (const file of files) {
+          if (file.endsWith(".zip")) {
+            await removeFile(file);
+          }
+        }
+      } catch (error) {
+        return;
+      }
+
+      $appStore.status = "Done";
+      loading = false;
   });
 </script>
 
@@ -109,8 +109,8 @@
   {#if !loading}
     {#if oauthToken}
       {#if $modsStore != null}
-        <div class="flex flex-col w-full max-w-6xl gap-y-5">
-          <div class="flex items-center flex-col gap-y-1.5">
+        <div class="flex flex-col w-full max-w-6xl gap-2">
+          <div class="flex items-center flex-col gap-1.5">
             {#if $appStore.downloading}
               <ProgressBar
                 class="w-full"
@@ -135,9 +135,9 @@
                   >
                 {/if}
                 <span
-                  >{humanFileSize($appStore.receivedSize)}/{humanFileSize(
-                    $appStore.totalSize
-                  )}</span
+                  >{humanFileSize($appStore.downloadSpeed)}/s - {humanFileSize(
+                    $appStore.receivedSize
+                  )}/{humanFileSize($appStore.totalSize)}</span
                 >
               </div>
               <div
@@ -217,7 +217,7 @@
                 ? 'hidden'
                 : ''}"
             >
-              <AccordionTrigger class="text-xl"
+              <AccordionTrigger class="text-xl py-2"
                 >New update available</AccordionTrigger
               >
               <AccordionContent

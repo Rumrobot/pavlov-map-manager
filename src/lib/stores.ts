@@ -16,6 +16,7 @@ export const appStore = writable<AppData>({
     downloading: false,
     receivedSize: 0,
     totalSize: 0,
+    downloadSpeed: 0,
     downloadStatus: "Nothing is downloading",
     currentlyDownloading: "None",
     queueOnGoing: 0,

@@ -184,6 +184,7 @@ async function downloadMap(mod: string) {
         let recSize = 0;
         let updateCounter = 0;
         let lastUpdate = 0;
+        let lastTime = Date.now();
 
         await download(
             fileInfo.download.binary_url,
@@ -192,7 +193,9 @@ async function downloadMap(mod: string) {
                 recSize += progress;
                 updateCounter++;
                 if (updateCounter - lastUpdate > 200) {
-                    appStore.update((store) => ({ ...store, receivedSize: recSize }));
+                    app.receivedSize = recSize;
+                    app.downloadSpeed = (recSize - lastUpdate)*1000 / (Date.now() - lastTime);
+                    appStore.set(app);
                     lastUpdate = updateCounter;
                 }
             },
@@ -257,7 +260,6 @@ async function downloadMap(mod: string) {
 
     modsStore.set(mods);
     appStore.set(app);
-    return;
 }
 
 async function getCurrentVersion(mod: string) {
