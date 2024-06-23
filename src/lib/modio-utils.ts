@@ -70,7 +70,7 @@ export async function loadMods() {
 
             if (assignModData(data)) {
                 mods = get(modsStore);
-                mods[data.id].subscribed = true;
+                mods[data.id].subscribed = false;
             }
         }
         if (localMods.includes(mod)) {

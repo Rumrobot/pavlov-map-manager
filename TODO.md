@@ -6,4 +6,3 @@
 
 ## QOL
 - Cancel button for downloading
-- mbps counter
