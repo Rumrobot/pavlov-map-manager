@@ -1,48 +1,15 @@
 {
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Pavlov Map Manager",
+  "version": "2.0.0",
+  "identifier": "dk.rumrobot.pavlov-map-manager",
   "build": {
-    "beforeDevCommand": "bun svelte:dev",
-    "beforeBuildCommand": "bun svelte:build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../build"
+    "frontendDist": "../static",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "bun dev",
+    "beforeBuildCommand": "bun run build"
   },
-  "package": {
-    "productName": "Pavlov Map Manager",
-    "version": "1.3.2"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "fs": {
-        "all": true,
-        "readFile": true,
-        "writeFile": true,
-        "readDir": true,
-        "copyFile": true,
-        "createDir": true,
-        "removeDir": true,
-        "removeFile": true,
-        "renameFile": true,
-        "exists": true,
-        "scope": [
-          "**"
-        ]
-      },
-      "window": {
-        "all": false,
-        "close": true,
-        "hide": true,
-        "show": true,
-        "maximize": true,
-        "minimize": true,
-        "unmaximize": true,
-        "unminimize": true,
-        "startDragging": true
-      }
-    },
+  "app": {
     "windows": [
       {
         "title": "Pavlov Map Manager",
@@ -51,24 +18,17 @@
     ],
     "security": {
       "csp": null
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "dk.rumrobot.pavlov-map-manager",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
-    "updater": {
-      "active": true,
-      "dialog": false,
-      "endpoints": ["https://www.rumrobot.dk/pavlov-map-manager/updates"],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVEOTdFMTVCNTA3MEYxNTUKUldSVjhYQlFXK0dYWGFqYVFLTzdQQ3NIeVVGaHRyajM4anZ0YllKaExLKyszbGZMNXlMTHg4RFMK"
     }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   }
 }
