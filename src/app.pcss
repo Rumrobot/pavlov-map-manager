@@ -6,35 +6,6 @@
     @apply flex flex-col items-center justify-center gap-3 p-10;
 }
 
-html,
-body {
-    @apply h-full overflow-hidden;
-}
-
-li {
-    @apply list-disc ml-5;
-}
-
-a {
-    @apply underline;
-}
-
-h1 {
-    @apply text-4xl font-bold;
-}
-
-h2 {
-    @apply text-3xl font-bold;
-}
-
-h3 {
-    @apply text-2xl font-bold;
-}
-
-h4 {
-    @apply text-xl font-bold;
-}
-
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -70,6 +41,20 @@ h4 {
         --ring: 240 5% 64.9%;
 
         --radius: 0.5rem;
+
+        // Sidebar
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+
+        --sidebar-border: 220 13% 91%;
+
+        --sidebar-ring: 217.2 91.2% 59.8%;
     }
 
     .dark {
@@ -104,6 +89,20 @@ h4 {
         --success-foreground: 210 40% 98%;
 
         --ring: 240 3.7% 15.9%;
+
+        // Sidebar
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary-foreground: 0 0% 100%;
+
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+
+        --sidebar-border: 240 3.7% 15.9%;
+
+        --sidebar-ring: 217.2 91.2% 59.8%;
     }
 }
 
@@ -114,22 +113,5 @@ h4 {
 
     body {
         @apply bg-background text-foreground;
-    }
-
-    /* Prettier firefox-like scrollbar for other browsers */
-    ::-webkit-scrollbar {
-        @apply relative right-6 w-1;
-    }
-
-    ::-webkit-scrollbar-track-piece {
-        @apply bg-[#fff0];
-    }
-
-    ::-webkit-scrollbar-thumb {
-        @apply rounded-lg border-[1px_solid_#B7B7B7] bg-[#CBCBCB] outline-offset-[2px] outline-[2px_solid_#FFF];
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        @apply bg-[#909090];
     }
 }
