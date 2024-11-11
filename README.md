@@ -12,18 +12,18 @@ Pavlov Map Manager
     </a>
 </p>
 
-
 This program lets you manage your pavlov maps outside of pavlov. It only works for Windows at the moment.
 
 ## Features
+
 - **Subcribe/Unsubscribe** to installed mods
 - **Update/Download** mods
 - **Delete** mods
 
 ## Installation
+
 You can download the compiled program under [releases](https://github.com/Rumrobot/pavlov-map-manager/releases).
 
 Once downloaded, open the exe/msi file and install the program as usual. Windows will prompt that it isn't safe.
 
-The program will guide you through the setup process. 
-
+The program will guide you through the setup process.

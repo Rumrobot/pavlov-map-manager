@@ -2,3 +2,13 @@
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+bun.lockb
+Cargo.lock
+
+# Tauri
+src-tauri/target
+src-tauri/gen
+
+# JS
+node_modules
+.svelte-kit
