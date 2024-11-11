@@ -10,7 +10,7 @@
     FullscreenExit,
     Close,
     Remove,
-    Menu,
+    Menu
   } from '@o7/icon/material';
   import { RefreshCcw, Server } from '@o7/icon/lucide';
   import { goto } from '$app/navigation';
