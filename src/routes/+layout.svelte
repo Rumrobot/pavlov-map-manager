@@ -43,31 +43,31 @@
   <div class="col-span-2 ml-2 flex items-center gap-1" data-tauri-drag-region>
     <Button
       variant="ghost"
-      size="icon"
       onclick={() => {
         if ($page.url.pathname !== '/') goto('/');
       }}
       class={cn(
-        'hover:bg-inherit',
+        'hover:bg-inherit px-2',
         $page.url.pathname === '/' ? 'hover:cursor-default' : 'text-muted',
       )}
     >
       <ModIoCog size={32} />
+      Mods
     </Button>
     <Button
       variant="ghost"
-      size="icon"
       onclick={() => {
         if ($page.url.pathname !== '/servers') goto('/servers');
       }}
       class={cn(
-        'hover:bg-inherit',
+        'hover:bg-inherit px-2',
         $page.url.pathname === '/servers'
           ? 'hover:cursor-default'
           : 'text-muted',
       )}
     >
       <Server size={24} />
+      Server List
     </Button>
     <div class="h-8 w-[1px] bg-border"></div>
     <Button variant="ghost" size="icon" onclick={() => (reload = true)}>
