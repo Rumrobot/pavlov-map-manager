@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../static",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun dev",
-    "beforeBuildCommand": "bun run build"
+    "beforeDevCommand": "bun svelte:dev",
+    "beforeBuildCommand": "bun run svelte:build"
   },
   "app": {
     "windows": [
