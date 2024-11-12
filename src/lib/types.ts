@@ -1,8 +1,10 @@
+export const TagType = ['map', 'mod', 'gamemode'] as const;
+
 export type Mod = {
   title: string;
   imageUrl: string;
   modUrl: string;
-  type: string;
+  type: (typeof TagType)[number];
   modioVersion?: number;
   localVersion?: number;
   subscribed: boolean;
